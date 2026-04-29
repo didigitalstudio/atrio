@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { Footer } from "@/components/shared/footer";
+import { Nav } from "@/components/shared/nav";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -22,7 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es-AR" className={`${manrope.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <Nav />
+        <main className="flex-1">{children}</main>
+        <Footer />
+        <Toaster />
+      </body>
     </html>
   );
 }
