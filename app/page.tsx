@@ -1,6 +1,7 @@
 import { ShieldCheck, MessageSquare, ListChecks } from "lucide-react";
 import Link from "next/link";
 import { PropertyCard } from "@/components/property/property-card";
+import { ZonesGrid } from "@/components/property/zones-grid";
 import { HeroSearch } from "@/components/search/hero-search";
 import { getFeaturedProperties } from "@/server/queries/properties";
 
@@ -87,18 +88,26 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ZONAS — placeholder simple por ahora */}
+      {/* ZONAS */}
       <section className="bg-bg-soft px-6 py-24 md:px-10">
         <div className="mx-auto max-w-[1320px]">
-          <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-            Por zona
+          <div className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
+            <div className="max-w-[680px]">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand">
+                Por zona
+              </div>
+              <h2 className="text-4xl font-light leading-tight tracking-tight md:text-[44px]">
+                Buscá <strong className="font-semibold">en el barrio que querés.</strong>
+              </h2>
+            </div>
+            <Link
+              href="/zonas"
+              className="whitespace-nowrap border-b-[1.5px] border-ink pb-0.5 text-sm font-semibold transition-colors hover:border-brand hover:text-brand"
+            >
+              Ver todas las zonas →
+            </Link>
           </div>
-          <h2 className="mb-6 max-w-[680px] text-4xl font-light leading-tight tracking-tight md:text-[44px]">
-            Buscá <strong className="font-semibold">en el barrio que querés.</strong>
-          </h2>
-          <p className="max-w-[540px] text-base text-ink-muted">
-            Próximamente: grilla de zonas con propiedades por barrio (Capital, Zona Norte, Oeste, Sur, Costa).
-          </p>
+          <ZonesGrid />
         </div>
       </section>
 

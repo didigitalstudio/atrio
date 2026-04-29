@@ -263,10 +263,12 @@ npx tsc --noEmit  # typecheck sin emitir archivos
 # shadcn — agregar nuevos componentes
 npx shadcn@latest add <nombre>
 
-# Supabase (cuando esté linkeado)
-supabase link --project-ref <ref>
-supabase db push                 # aplicar migrations locales al proyecto remoto
+# Supabase (proyecto ya linkeado: ref lbnslkasqfbufjkejovj, sa-east-1)
+supabase db push --password "<DB_PASSWORD>" --yes        # aplicar migrations al remoto
 supabase gen types typescript --linked > lib/supabase/types.ts
+# ⚠️ El CLI vuelca un "Initialising login role..." al inicio del file
+# generado y un mensaje de "new version available" al final. Borrar
+# esas líneas a mano después de regenerar — ver lib/supabase/types.ts.
 
 # GitHub Actions
 # CI corre automáticamente en push y pull_request a main.
