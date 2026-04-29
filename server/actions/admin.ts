@@ -3,14 +3,43 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import type { Database } from "@/lib/supabase/types";
 import {
   propiedadSchema,
   type PropiedadInput,
 } from "@/lib/schemas/propiedad";
 import { agenteSchema, type AgenteInput } from "@/lib/schemas/agente";
+import {
+  notifyClientPropertySubmitted,
+  notifyPropertyApproved,
+  notifyPropertyRejected,
+} from "@/lib/email/notifications";
 
 type PropiedadUpdate = Database["public"]["Tables"]["propiedades"]["Update"];
+
+/** Para approve/reject: levanta email del submitter via service role. */
+async function getSubmitterEmailFromPropiedadId(
+  id: string
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: prop } = await supabase
+    .from("propiedades")
+    .select("submitted_by")
+    .eq("id", id)
+    .maybeSingle();
+  if (!prop?.submitted_by) return null;
+
+  try {
+    const service = createServiceClient();
+    const { data, error } = await service.auth.admin.getUserById(prop.submitted_by);
+    if (error || !data.user?.email) return null;
+    return data.user.email;
+  } catch (err) {
+    console.error("getSubmitterEmailFromPropiedadId error:", err);
+    return null;
+  }
+}
 
 const ESTADO_LEAD = [
   "nuevo",
@@ -153,10 +182,10 @@ export async function createPropiedad(
 
   const isAgentSubmission = !!agente;
 
-  // Trae el barrio para el slug
+  // Trae el barrio para el slug + nombre (para el mail).
   const { data: zona } = await supabase
     .from("zonas")
-    .select("slug")
+    .select("nombre, slug")
     .eq("id", parsed.data.zonaId)
     .maybeSingle();
 
@@ -204,6 +233,23 @@ export async function createPropiedad(
   if (error) {
     console.error("createPropiedad insert error:", error.message);
     return { ok: false, error: "No pudimos guardar la propiedad." };
+  }
+
+  // Si es submission de cliente, mandar mails (admin + confirmación al cliente).
+  if (!isAgentSubmission && user.email) {
+    try {
+      const submitterName =
+        (user.user_metadata as { nombre?: string } | undefined)?.nombre ?? null;
+      await notifyClientPropertySubmitted({
+        titulo: parsed.data.titulo,
+        direccion: parsed.data.direccion,
+        zona: zona?.nombre ?? "—",
+        submitterEmail: user.email,
+        submitterName,
+      });
+    } catch (err) {
+      console.error("createPropiedad email error:", err);
+    }
   }
 
   revalidatePath("/admin/propiedades");
@@ -334,6 +380,13 @@ export async function approvePropiedad(
     };
   }
 
+  // Antes de actualizar, levantamos titulo/slug/submitter para el mail.
+  const { data: before } = await supabase
+    .from("propiedades")
+    .select("titulo, slug")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("propiedades")
     .update({ estado: "activa", agente_id: agente.id })
@@ -343,6 +396,23 @@ export async function approvePropiedad(
     console.error("approvePropiedad error:", error.message);
     return { ok: false, error: "No pudimos aprobar la propiedad." };
   }
+
+  // Aviso al submitter (cliente) que su propiedad ya está online.
+  if (before) {
+    try {
+      const email = await getSubmitterEmailFromPropiedadId(parsed.data.id);
+      if (email) {
+        await notifyPropertyApproved({
+          titulo: before.titulo,
+          slug: before.slug,
+          submitterEmail: email,
+        });
+      }
+    } catch (err) {
+      console.error("approvePropiedad email error:", err);
+    }
+  }
+
   revalidatePath("/admin/propiedades");
   revalidatePath("/admin");
   return { ok: true };
@@ -356,6 +426,13 @@ export async function rejectPropiedad(
   if (!parsed.success) return { ok: false, error: "Id inválido." };
 
   const supabase = await createClient();
+
+  const { data: before } = await supabase
+    .from("propiedades")
+    .select("titulo")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("propiedades")
     .update({ estado: "despublicada" })
@@ -365,6 +442,21 @@ export async function rejectPropiedad(
     console.error("rejectPropiedad error:", error.message);
     return { ok: false, error: "No pudimos rechazar la propiedad." };
   }
+
+  if (before) {
+    try {
+      const email = await getSubmitterEmailFromPropiedadId(parsed.data.id);
+      if (email) {
+        await notifyPropertyRejected({
+          titulo: before.titulo,
+          submitterEmail: email,
+        });
+      }
+    } catch (err) {
+      console.error("rejectPropiedad email error:", err);
+    }
+  }
+
   revalidatePath("/admin/propiedades");
   revalidatePath("/admin");
   return { ok: true };

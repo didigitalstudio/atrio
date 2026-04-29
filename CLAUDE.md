@@ -11,8 +11,8 @@ Plataforma SaaS para inmobiliarias argentinas. Compra, alquiler, alquiler tempor
 - **Producción**: https://atrio-omega.vercel.app — la home funciona y trae datos reales de Supabase.
 - **Repo**: https://github.com/didigitalstudio/atrio (privado, default `main`, CI verde).
 - **Stack**: Next 16 + React 19 + Tailwind 4 + shadcn/ui (base-nova) + Supabase (sa-east-1) + Manrope.
-- **Hecho**: setup + design system + schema DB con 6 tablas + seed + **sitio público completo** (home, listings, búsqueda, detalle, institucional, formularios, `/vender`) + **auth + panel admin** (`/login`, `/registrarse` para clientes, middleware, `/admin` con dashboard, `/admin/propiedades` con filtros + cambio de estado + edit, `/admin/leads`, `/admin/tasaciones`, `/admin/equipo` CRUD, `/publicar` con flujo dual: agentes publican como `borrador`, clientes mandan a revisión `en_revision`). Migraciones `0003` y `0004` aplicadas. María Pérez (agente seed) ya está vinculada a `auth.users` (`izuralucas@gmail.com`).
-- **Falta**: bucket Supabase Storage + drag&drop de fotos, sitemap dinámico, OG dinámico, Mapbox en detalle, Resend transaccional, detalle de lead con timeline de interacciones.
+- **Hecho**: setup + design system + schema DB con 6 tablas + seed + **sitio público completo** (home, listings, búsqueda, detalle, institucional, formularios, `/vender`) + **auth + panel admin** (`/login`, `/registrarse` para clientes, middleware, `/admin` con dashboard, `/admin/propiedades` con filtros + cambio de estado + edit, `/admin/leads`, `/admin/tasaciones`, `/admin/equipo` CRUD, `/publicar` con flujo dual: agentes publican como `borrador`, clientes mandan a revisión `en_revision`) + **avisos transaccionales con Resend** (leads, tasaciones, submissions, approve/reject). Migraciones `0003` y `0004` aplicadas. María Pérez (agente seed) ya está vinculada a `auth.users` (`izuralucas@gmail.com`).
+- **Falta**: bucket Supabase Storage + drag&drop de fotos, sitemap dinámico, OG dinámico, Mapbox en detalle, detalle de lead con timeline de interacciones. Pendientes de configuración (no de código): verificar dominio en Resend para mandar desde `noreply@atrio.com.ar`, configurar Supabase Auth Custom SMTP con Resend para emails de verificación, activar `RESEND_API_KEY` en Vercel.
 - **Antes de codear**: leé este archivo entero (especialmente "Reglas críticas" y "Para el próximo dev").
 
 ---
@@ -326,6 +326,19 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 - **`/nosotros`** — hero institucional + 3 valores en cards (info clara / equipo matriculado / buen trato) + grid del equipo desde `getAgentes()` con foto/iniciales fallback / matrícula / bio. CTA al final hacia `/contacto` y `/tasaciones`.
 - **`/vender`** — landing para vendedores. Hero con CTAs a `/publicar` (primario) y `/tasaciones` (secundario), strip de 3 stats, 4 pasos del proceso (tasamos → producimos → publicamos → cerramos), 3 razones (matriculados / contestamos rápido / sin sorpresas), CTA final con copy "cargá tu propiedad en 5 minutos".
 
+### Mails transaccionales (Resend)
+
+- **Cliente** (`lib/email/client.ts`): factory `getResend()` cacheado. **Sin `RESEND_API_KEY` el sistema loguea el envío y sigue** — los avisos no rompen la operación principal. Configurable: `RESEND_FROM` (default `Atrio <onboarding@resend.dev>` que es el sandbox de Resend, solo manda al email registrado en su cuenta), `NOTIFICATIONS_EMAIL` (default `izuralucas@gmail.com` — recibe avisos cuando no hay agente asignado), `NEXT_PUBLIC_SITE_URL` (default `https://atrio-omega.vercel.app` — para links absolutos).
+- **Layout HTML compartido** en `lib/email/notifications.ts` (función `shell`): card centrada, brand `#1B6B47`, container max 560px, sin templating engine. `escapeHtml` y `nl2br` para sanitizar input de usuario.
+- **Eventos cubiertos** (todos en `lib/email/notifications.ts`):
+  - `notifyLeadCreated` — se dispara desde `createLead`. Manda **dos** mails: aviso al agente asignado de la propiedad consultada (con `replyTo: lead.email` para responder directo) y confirmación al usuario ("recibimos tu consulta").
+  - `notifyTasacionRequested` — desde `createTasacion`. Aviso al equipo + confirmación al solicitante.
+  - `notifyClientPropertySubmitted` — desde `createPropiedad` cuando el usuario es **cliente** (no agente). Aviso al equipo con CTA a `/admin/propiedades?estado=en_revision` + confirmación al cliente.
+  - `notifyPropertyApproved` — desde `approvePropiedad`. Mail al cliente: "tu propiedad ya está online" con link al detalle público.
+  - `notifyPropertyRejected` — desde `rejectPropiedad`. Mail al cliente: "necesitamos ajustar algunos datos".
+- **Servicio role para mirar `auth.users`**: `lib/supabase/service.ts` exporta `createServiceClient()` con `SUPABASE_SERVICE_ROLE_KEY`. Lo uso solo para `auth.admin.getUserById(submitted_by)` cuando approve/reject necesita el email del cliente que mandó la submission. **NO se importa desde un Client Component** — `lib/supabase/service.ts` empieza con `import "server-only";` para que tsc rompa si alguien lo intenta.
+- **Verificación de email en signup**: la maneja Supabase Auth, no nuestro código. Hasta que se configure Custom SMTP con Resend en el dashboard de Supabase, los mails de confirmación salen del relay de Supabase (3-4 mails/hora, marca `noreply@mail.app.supabase.io`). Steps en "Para activar Resend" más abajo.
+
 ---
 
 ## 🔨 Lo que falta — priorizado
@@ -394,6 +407,33 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 - **El primer auth user (`izuralucas@gmail.com`) está vinculado a María Pérez** (`agentes.user_id`) vía script `bootstrap-admin-user.mjs` que ya se borró. Para más usuarios: o crear un nuevo agente con `user_id`, o usar el panel `/admin/equipo` (que crea agentes sin `user_id` por ahora — pendiente: linkear al crear).
 - **CLI `supabase db push` sin `--password`** ya funciona en este repo porque `supabase link` quedó con credenciales cacheadas. Si en otra máquina pide password, ver Reglas críticas #10 / Comandos útiles.
 - **Next 16 deprecó `middleware.ts`** a favor de `proxy.ts` con la misma API. El build muestra el warning. Cuando migremos, renombrar el archivo + actualizar el matcher; la lógica adentro (`updateSession`) no cambia.
+- **Resend `onboarding@resend.dev`** solo manda al email registrado en la cuenta Resend (es el dominio sandbox). Si querés testear con otros destinatarios, primero verificá un dominio propio o vas a ver "You can only send testing emails to your own email address". Igual sin `RESEND_API_KEY` el código solo loguea — útil para dev sin riesgo de spam.
+- **Avisos de mail son `await` (no fire-and-forget)** porque en serverless (Vercel) el proceso puede terminar antes que el envío si no se espera. El costo es ~200ms extra por action; vale la pena para no perder mails. Cada llamada está envuelta en try/catch — si Resend falla, la operación principal no se rompe.
+- **`createServiceClient` solo en server**: `lib/supabase/service.ts` empieza con `import "server-only";`. Si lo importás desde un Client Component, tsc rompe en build con un mensaje claro.
+
+### Para activar Resend (steps manuales que NO podés hacer desde código)
+
+1. Crear cuenta en https://resend.com (free: 100 mails/día, 3000/mes — alcanza para arrancar).
+2. **Verificar dominio** (recomendado, sino se manda solo al email de la cuenta Resend):
+   - Resend → Domains → Add Domain → `atrio.com.ar` (o el que sea).
+   - Agregar los 3 DNS records (SPF, DKIM, DMARC) que muestra Resend en el proveedor de DNS del dominio.
+   - Esperar verificación (suele ser <30 min).
+3. **Generar API key**: Resend → API Keys → Create. Copiar.
+4. **Setear env vars en Vercel** (Production + Preview + Development):
+   ```
+   RESEND_API_KEY=<la-key>
+   RESEND_FROM="Atrio <noreply@atrio.com.ar>"      # o "Atrio <onboarding@resend.dev>" para testear
+   NOTIFICATIONS_EMAIL=hola@atrio.com.ar           # o el email del equipo
+   NEXT_PUBLIC_SITE_URL=https://atrio-omega.vercel.app
+   ```
+5. **Replicar localmente**: `vercel env pull --environment=development` (regenera `.env.local`).
+6. **Configurar Supabase Auth Custom SMTP** (para que los mails de verificación de signup salgan por Resend):
+   - Supabase Dashboard → Project Settings → Auth → SMTP Settings → enable.
+   - Host: `smtp.resend.com`, Port: `465` (SSL) o `587` (TLS).
+   - Username: `resend`, Password: la API key de Resend.
+   - Sender email: `noreply@atrio.com.ar` (o el que esté verificado).
+   - Sender name: `Atrio`.
+   - Guardar y testear con un signup real.
 
 ### Reglas del flujo de trabajo con humano
 - Tareas grandes (página completa, refactor, migration nueva): mostrar **plan** primero, esperar OK, después codear pieza por pieza.
