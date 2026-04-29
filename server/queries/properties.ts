@@ -126,6 +126,26 @@ export async function getPropertyBySlug(
   return toPropiedad(data);
 }
 
+export type PropiedadAdmin = PropiedadRow & {
+  zona: { nombre: string; slug: string } | null;
+};
+
+/** Lista para el panel: TODOS los estados, sin paginar (limit 200). */
+export async function getAdminProperties(): Promise<PropiedadAdmin[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("propiedades")
+    .select("*, zona:zonas(nombre, slug)")
+    .order("updated_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error("getAdminProperties error:", error.message);
+    return [];
+  }
+  return (data ?? []) as PropiedadAdmin[];
+}
+
 export async function getZonas(): Promise<ZonaResumen[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

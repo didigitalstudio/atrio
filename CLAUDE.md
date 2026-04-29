@@ -11,8 +11,8 @@ Plataforma SaaS para inmobiliarias argentinas. Compra, alquiler, alquiler tempor
 - **Producción**: https://atrio-omega.vercel.app — la home funciona y trae datos reales de Supabase.
 - **Repo**: https://github.com/didigitalstudio/atrio (privado, default `main`, CI verde).
 - **Stack**: Next 16 + React 19 + Tailwind 4 + shadcn/ui (base-nova) + Supabase (sa-east-1) + Manrope.
-- **Hecho**: setup + design system + schema DB con 6 tablas + seed + **todo el sitio público** (home, listings `/comprar` `/alquilar` `/temporario` `/emprendimientos`, búsqueda unificada `/buscar`, detalle `/propiedades/[slug]`, institucional `/nosotros`, formularios `/contacto` y `/tasaciones`). HeroSearch ya navega de verdad. Server actions `createLead` y `createTasacion` insertan a Supabase con RLS de INSERT público.
-- **Falta** (priorizado abajo): auth (`/login`), `/publicar` para inmobiliarias, dashboard admin en `app/(admin)/`. Más pulidos: bucket Storage propio, counts reales por zona, sitemap dinámico, OG dinámico, Mapbox en detalle, Resend transaccional.
+- **Hecho**: setup + design system + schema DB con 6 tablas + seed + **sitio público completo** (home, listings, búsqueda, detalle, institucional, formularios) + **auth + panel admin** (`/login`, middleware, `/admin` con dashboard, `/admin/propiedades` con cambio de estado inline, `/admin/leads` con filtros y status update, `/admin/tasaciones` igual, `/publicar` con form completo). Migración `0003_admin_policies.sql` aplicada al remoto.
+- **Falta**: bucket Supabase Storage para fotos (hoy `/publicar` toma URL), `/admin/equipo` (link en sidebar pero página no existe todavía), upload drag&drop, vincular `agentes.user_id` ↔ `auth.users`, sitemap dinámico, OG dinámico, Mapbox en detalle, Resend transaccional.
 - **Antes de codear**: leé este archivo entero (especialmente "Reglas críticas" y "Para el próximo dev").
 
 ---
@@ -108,32 +108,43 @@ Manrope, una sola familia. Jerarquía por **peso**, no por familia.
 
 ```
 app/
-  (public)/        → comprar, alquilar, temporario, emprendimientos, buscar,
-                     contacto, tasaciones, nosotros, propiedades/[slug]
-  (admin)/         → rutas protegidas para inmobiliarias (vacío)
-  page.tsx         → home pública (raíz)
-  layout.tsx       → root layout (Manrope, Nav, Footer, Toaster)
+  (public)/        → home + listings (comprar/alquilar/temporario/emprendimientos),
+                     buscar, propiedades/[slug], contacto, tasaciones, nosotros,
+                     publicar. Tiene layout propio con Nav + Footer.
+  admin/           → panel logueado (page = dashboard, propiedades, leads, tasaciones).
+                     Layout propio con AdminSidebar y auth check server-side.
+  login/           → form de login (sin Nav/Footer, root layout).
+  layout.tsx       → root layout: Manrope + Toaster. NO incluye Nav/Footer.
   globals.css      → tokens Atrio + @theme inline + tokens shadcn mapeados
+middleware.ts      → llama a updateSession() en cada request: refresca JWT,
+                     redirige /admin* + /publicar a /login si no está logueado,
+                     y mueve a /admin si entra a /login estando logueado.
 components/
   property/        → property-card, favorite-button, zones-grid,
                      property-filters, property-listing, property-pagination
   search/          → hero-search (rutea por tab + parsea inputs)
-  forms/           → contact-form, tasacion-form (RHF + zod)
-  admin/           → UI de panel inmobiliaria (vacío todavía)
+  forms/           → contact-form, tasacion-form, login-form, propiedad-form
+  admin/           → sidebar, inline-status-form (cliente que dispara update on change)
   shared/          → nav, footer
   ui/              → componentes shadcn (no editar manualmente salvo override)
 lib/
-  supabase/        → server.ts (cliente SSR), types.ts (tipos generados)
-  schemas/         → lead.ts, tasacion.ts (zod, fuente de verdad cliente+server)
+  supabase/        → server.ts, client.ts (browser), middleware.ts (updateSession),
+                     types.ts (tipos generados)
+  schemas/         → lead.ts, tasacion.ts, auth.ts, propiedad.ts (zod, fuente de
+                     verdad cliente+server)
   search-params.ts → parsers compartidos para URL searchParams
   types.ts         → types de dominio (Propiedad, enums)
   utils.ts         → cn() y otros utilitarios
 server/
-  actions/         → leads.ts (createLead), tasaciones.ts (createTasacion)
+  actions/         → leads.ts (createLead), tasaciones.ts (createTasacion),
+                     auth.ts (signIn, signOut), admin.ts (updateLeadStatus,
+                     updateTasacionStatus, updatePropiedadEstado, createPropiedad)
   queries/         → properties.ts (getFeaturedProperties, getProperties,
-                     getPropertyBySlug, getZonas), agentes.ts
+                     getPropertyBySlug, getAdminProperties, getZonas),
+                     agentes.ts, leads.ts, tasaciones.ts
 supabase/
-  migrations/      → 0001_initial_schema.sql, 0002_seed.sql
+  migrations/      → 0001_initial_schema.sql, 0002_seed.sql,
+                     0003_admin_policies.sql (RLS para authenticated)
 mockups/           → 01-design-system-v2.html, 02-home-v2.html
 ```
 
@@ -283,6 +294,18 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 - Sell CTA bg-brand-deep con botones "Solicitar tasación" + "Cómo trabajamos".
 - Trust strip de 3 items (agentes matriculados, respuesta < 2h, info clara).
 
+### Auth + Panel admin
+
+- **Middleware** (`middleware.ts` + `lib/supabase/middleware.ts`) — refresca el JWT con `supabase.auth.getUser()` en cada request, redirige `/admin*` y `/publicar` a `/login?next=...` si no hay sesión, y manda a `/admin` si un user logueado entra a `/login`. El matcher excluye assets estáticos.
+- **`/login`** (`app/login/page.tsx`) — card centrada sin Nav/Footer (root layout pelado). `<LoginForm>` (RHF + zod) llama a `signIn` server action que hace `signInWithPassword` y redirige a `next` o `/admin`.
+- **`/admin`** (`app/admin/`) — layout propio con `<AdminSidebar>` (links Inicio/Propiedades/Leads/Tasaciones/Equipo + logout) y main content. Auth check server-side adicional al middleware.
+- **Dashboard** (`app/admin/page.tsx`) — 5 cards con counts: leads sin atender, tasaciones pendientes, propiedades activas (+ borrador), destacadas en home, agentes activos. Highlight en cards con valor > 0 que requieren acción.
+- **`/admin/propiedades`** — tabla con todas las propiedades (cualquier estado), select inline para cambiar `estado` con `<InlineStatusForm>` que dispara `updatePropiedadEstado` server action y revalida path. Link a vista pública (solo si activa/reservada). Botón "Publicar nueva" → `/publicar`.
+- **`/admin/leads`** — tabla orden cronológica desc, chips para filtrar por `estado` (`?estado=...`), select inline para cambiar estado del lead. Muestra mensaje, propiedad linkeada (si aplica), canal.
+- **`/admin/tasaciones`** — análogo a leads, con chips de filtro y status update. Muestra dirección, tipo, m²/ambientes, valor estimado.
+- **`/publicar`** (`app/(public)/publicar/page.tsx`) — form completo con todos los campos del schema (título, descripción, tipo, operación, dirección, zona, ambientes/dormitorios/baños/m²/antigüedad, precio + moneda, expensas, apto crédito, features comma-separated, foto URL). Server action `createPropiedad` valida con zod, genera slug único a partir de título + slug de zona, resuelve `agente_id` (primero por `user_id` del usuario logueado, fallback al primer agente activo), y guarda con `estado='borrador'`. Redirect a `/admin/propiedades`.
+- **Migración `0003_admin_policies.sql`** (aplicada al remoto) — agrega policies `to authenticated` para CRUD total en propiedades, leads, interacciones, tasaciones, agentes. Las policies para anónimos quedan intactas (SELECT filtrado, INSERT público en leads/tasaciones).
+
 ### Sitio público completo (`app/(public)/`)
 - **`/comprar`, `/alquilar`, `/temporario`** — listings filtrados por `operacion`. Cada page parsea searchParams con `parseUserPropertyFilters` y delega a `<PropertyListing>` con su `lockedFilters`. Archivos de ~25 líneas.
 - **`/emprendimientos`** — mismo template pero con `lockedFilters: { tipo: 'emprendimiento' }` y `hideTipoField` (no muestra el dropdown de tipo, ya está fijo).
@@ -296,29 +319,23 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 
 ## 🔨 Lo que falta — priorizado
 
-> 🔥 La Alta prioridad (todo el sitio público: 9 rutas + HeroSearch wired + 2 server actions) está cerrada — ver "Sitio público completo" en la sección anterior.
+> 🔥 La Alta prioridad (sitio público completo) y 🌑 la Media prioridad base (auth + dashboard admin con leads/tasaciones/propiedades + `/publicar` form) están cerradas. Lo que sigue son extensiones del admin y pulidos.
 
-### 🌑 Media prioridad — auth y admin
+### 🌑 Media prioridad pendiente — extensión admin
 
-#### `/login`
-- Login con Supabase Auth (email + password, magic link como alternativa).
-- Después del login → redirect a `/admin`.
-- Middleware con `@supabase/ssr` middleware client para proteger `app/(admin)/`.
+#### `/admin/equipo`
+- Link existe en el sidebar pero la ruta es 404. Listado + alta de agentes (CRUD) usando las policies que ya están en migración `0003`.
 
-#### `/publicar` (cierra cuando hay auth)
-- Form multi-step para que un agente publique propiedad.
-- Step 1: foto principal + info básica (título, dirección, zona, tipo, operación).
-- Step 2: detalles (m², ambientes, dormitorios, baños, antigüedad).
-- Step 3: precio + expensas.
-- Step 4: features (checkboxes) + fotos extra (drag & drop a Supabase Storage).
-- Submit → `INSERT INTO propiedades` con `estado='borrador'`.
+#### Vincular agente al usuario logueado
+- `agentes.user_id` está en el schema pero hoy no se setea. `createPropiedad` cae al "primer agente activo" como stub. Pasos:
+  1. Al crear un usuario auth nuevo, también crear su row en `agentes` con `user_id = auth.users.id`.
+  2. Reemplazar el fallback en `server/actions/admin.ts` por: si no hay match por `user_id`, fallar con error claro en lugar de elegir cualquier agente.
 
-#### `app/(admin)/...` — dashboard inmobiliaria
-- Layout protegido (auth check en middleware).
-- Sidebar: Inicio, Propiedades, Leads, Tasaciones, Equipo.
-- CRUD de propiedades.
-- Inbox de leads (kanban por `estado`).
-- Detalle de lead con timeline de `interacciones`.
+#### Detalle de lead con timeline
+- `/admin/leads/[id]` con timeline de `interacciones` (insert + listar). Sumar acciones rápidas: marcar como contactado, agregar nota, derivar a otro agente.
+
+#### Editar propiedad (`/admin/propiedades/[id]/edit`)
+- Reusar `<PropiedadForm>` con `defaultValues` traídos por `getPropertyById`. Action separada `updatePropiedad`.
 
 ### 🌱 Baja prioridad — pulidos
 
@@ -361,6 +378,10 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 - **`params` y `searchParams` son `Promise`** en pages/layouts de Next 16. Hay que `await` antes de usar.
 - **`z.coerce.number()` + `useForm` rompen los types**: el input type de `z.coerce` es `unknown` y el output es `number`, así el `Resolver` de RHF no calza con `useForm<TFieldValues>`. Workaround usado en `lib/schemas/tasacion.ts`: campos numéricos como `z.string().refine()` con un helper `numericString(min, max, msg)`, y el server action convierte con `parseInt(value, 10)` antes del INSERT. Si volvés a meter números en un form, copiá ese patrón en lugar de pelearte con `z.coerce`.
 - **`getProperties` filtra por `zona.slug` con `!inner` join**: `supabase .select("*, zona:zonas!inner(...)")` + `.eq("zona.slug", value)`. Sin `!inner` el filtro no aplica al row principal.
+- **No usar route group `(admin)`**: dos route groups con `page.tsx` en la raíz colisionan en `/`. Por eso admin vive en `app/admin/` (folder real, sin paréntesis) y `(public)` envuelve home + listings + forms.
+- **`createPropiedad` resuelve `agente_id` con un fallback** ("primer agente activo") porque hoy ningún `agentes.user_id` está vinculado a `auth.users`. Cuando se cree el primer auth user, hay que insertar (o updatear) la fila en `agentes` con `user_id = <auth user id>` para que el lookup primario funcione. Mientras tanto, todas las propiedades publicadas se atribuyen a María Pérez (id seed `aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee`).
+- **CLI `supabase db push` sin `--password`** ya funciona en este repo porque `supabase link` quedó con credenciales cacheadas. Si en otra máquina pide password, ver Reglas críticas #10 / Comandos útiles.
+- **Next 16 deprecó `middleware.ts`** a favor de `proxy.ts` con la misma API. El build muestra el warning. Cuando migremos, renombrar el archivo + actualizar el matcher; la lógica adentro (`updateSession`) no cambia.
 
 ### Reglas del flujo de trabajo con humano
 - Tareas grandes (página completa, refactor, migration nueva): mostrar **plan** primero, esperar OK, después codear pieza por pieza.
