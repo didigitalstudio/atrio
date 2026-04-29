@@ -1,26 +1,172 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* =============================================================
+   ATRIO · DESIGN TOKENS
+   Una sola fuente de verdad. Los tokens shadcn (--primary,
+   --background, --border, etc.) están mapeados a los tokens
+   de Atrio para que los componentes shadcn usen la paleta
+   sin saberlo. Los tokens custom (--brand, --ink-muted,
+   --bg-soft, etc.) están expuestos como utilities Tailwind
+   vía el bloque @theme inline de abajo.
+   ============================================================= */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* === Fondos === */
+  --bg: #ffffff;
+  --bg-soft: #f7f7f5;
+  --bg-deep: #efeee9;
+
+  /* === Tintas === */
+  --ink: #1a1a1a;
+  --ink-soft: #4a4a48;
+  --ink-muted: #6b6b68;
+  --ink-faint: #9a9893;
+
+  /* === Líneas === */
+  --line: #e8e6e0;
+  --line-soft: #f0eee8;
+
+  /* === Marca: verde bosque === */
+  --brand: #1b6b47;
+  --brand-deep: #0f4a2e;
+  --brand-soft: #e8f0ec;
+  --brand-faint: #f4f8f5;
+
+  /* === Accesorios === */
+  --whatsapp: #25d366;
+
+  /* === Sombras custom (clave del sistema sobre fondo blanco) === */
+  --shadow-xs: 0 1px 2px rgba(15, 15, 15, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 15, 15, 0.06), 0 1px 2px rgba(15, 15, 15, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(15, 15, 15, 0.08), 0 2px 4px -1px rgba(15, 15, 15, 0.04);
+  --shadow-lg: 0 12px 32px -8px rgba(15, 15, 15, 0.12), 0 4px 12px -2px rgba(15, 15, 15, 0.06);
+
+  /* === Tokens shadcn → mapeados a Atrio === */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--bg);
+  --card-foreground: var(--ink);
+  --popover: var(--bg);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--ink);
+  --secondary-foreground: #ffffff;
+  --muted: var(--bg-soft);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--brand-deep);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--brand);
+
+  /* charts: se dejan los grises de shadcn hasta que diseñemos el módulo de stats */
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+
+  --radius: 0.625rem; /* 10px — matchea con el radius de inputs del sistema */
+
+  /* sidebar (admin) — base neutral por ahora */
+  --sidebar: var(--bg-soft);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--brand-soft);
+  --sidebar-accent-foreground: var(--brand-deep);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--brand);
 }
 
+/* =============================================================
+   Mapeo de tokens custom Atrio a utilities Tailwind 4.
+   Hace que `bg-brand`, `text-ink-muted`, `border-line`, etc.
+   funcionen como cualquier utility nativo.
+   ============================================================= */
 @theme inline {
+  --font-sans: var(--font-sans);
+
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-bg-deep: var(--bg-deep);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-faint: var(--brand-faint);
+
+  --color-whatsapp: var(--whatsapp);
+
+  /* shadcn tokens → mantener compatibilidad de utilities */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Sombras override: Atrio es sutil sobre blanco */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  /* Radius escalado a partir de --radius */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }

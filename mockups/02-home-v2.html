@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atrio · Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* === FONDOS === */
+    --bg: #FFFFFF;
+    --bg-soft: #F7F7F5;
+    --bg-deep: #EFEEE9;
+
+    /* === TINTAS === */
+    --ink: #1A1A1A;
+    --ink-soft: #4A4A48;
+    --ink-muted: #6B6B68;
+    --ink-faint: #9A9893;
+
+    /* === LÍNEAS === */
+    --line: #E8E6E0;
+    --line-soft: #F0EEE8;
+
+    /* === MARCA: VERDE BOSQUE === */
+    --brand: #1B6B47;
+    --brand-deep: #0F4A2E;
+    --brand-soft: #E8F0EC;
+    --brand-faint: #F4F8F5;
+
+    /* === ACCESORIOS === */
+    --whatsapp: #25D366;
+
+    /* === SOMBRAS (clave del sistema blanco) === */
+    --shadow-xs: 0 1px 2px rgba(15, 15, 15, 0.04);
+    --shadow-sm: 0 1px 3px rgba(15, 15, 15, 0.06), 0 1px 2px rgba(15, 15, 15, 0.04);
+    --shadow-md: 0 4px 12px -2px rgba(15, 15, 15, 0.08), 0 2px 4px -1px rgba(15, 15, 15, 0.04);
+    --shadow-lg: 0 12px 32px -8px rgba(15, 15, 15, 0.12), 0 4px 12px -2px rgba(15, 15, 15, 0.06);
+
+    --sans: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  img { display: block; max-width: 100%; }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ============== NAV ============== */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 48px;
+  }
+  .logo {
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+  }
+  .logo .dot { color: var(--brand); }
+  .nav-links {
+    display: flex;
+    gap: 36px;
+    list-style: none;
+    flex: 1;
+  }
+  .nav-links a {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-actions { display: flex; gap: 12px; align-items: center; }
+  .nav-link-action {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 10px 0;
+  }
+  .btn-publish {
+    background: var(--ink);
+    color: white;
+    padding: 11px 22px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .btn-publish:hover { background: #000; }
+
+  /* ============== HERO ============== */
+  .hero {
+    position: relative;
+    padding: 96px 40px 64px;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brand);
+    margin-bottom: 24px;
+  }
+  .hero-title {
+    font-size: 72px;
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    max-width: 880px;
+    margin-bottom: 24px;
+    color: var(--ink);
+  }
+  .hero-title strong { font-weight: 600; }
+  .hero-subtitle {
+    font-size: 18px;
+    color: var(--ink-muted);
+    max-width: 540px;
+    line-height: 1.55;
+    margin-bottom: 56px;
+  }
+
+  /* ============== BUSCADOR ============== */
+  .search-wrap {
+    background: white;
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    padding: 8px;
+    border: 1px solid var(--line-soft);
+  }
+  .search-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 8px 0;
+    margin-bottom: 4px;
+  }
+  .tab {
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: transparent;
+    border-radius: 999px;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+  }
+
+  .search-fields {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1.2fr auto;
+    gap: 1px;
+    background: var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .field {
+    background: white;
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .field:hover { background: var(--bg-soft); }
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+  }
+  .field-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    padding: 0;
+    font-family: inherit;
+  }
+  .field-value::placeholder { color: var(--ink-faint); font-weight: 400; }
+
+  .search-submit {
+    background: var(--brand);
+    color: white;
+    padding: 0 36px;
+    margin: 6px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .search-submit:hover { background: var(--brand-deep); }
+  .search-submit svg { width: 18px; height: 18px; }
+
+  .quick-searches {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 32px;
+  }
+  .quick-label {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-right: 4px;
+  }
+  .chip {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: white;
+    color: var(--ink-soft);
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* ============== METRICS STRIP ============== */
+  .metrics {
+    background: var(--bg-soft);
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    margin: 96px 0 0;
+  }
+  .metrics-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 64px;
+  }
+  .metric-num {
+    font-size: 40px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .metric-num strong { font-weight: 600; color: var(--brand); }
+  .metric-label {
+    font-size: 13px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  /* ============== SECTION GENERIC ============== */
+  .section {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 96px 40px;
+  }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 48px;
+    gap: 32px;
+  }
+  .section-head-left { max-width: 680px; }
+  .section-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brand);
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 44px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .section-title strong { font-weight: 600; }
+  .section-link {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+    padding-bottom: 2px;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .section-link:hover {
+    color: var(--brand);
+    border-bottom-color: var(--brand);
+  }
+
+  /* ============== FEATURED PROPERTIES ============== */
+  .props-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .property-card {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  .property-card:hover { transform: translateY(-4px); }
+  .property-card:hover .card-image img { transform: scale(1.04); }
+  .property-card:hover .card-title { color: var(--brand); }
+
+  .card-image {
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    position: relative;
+    border-radius: 16px;
+    background: var(--bg-soft);
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .card-tag {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: white;
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    box-shadow: var(--shadow-xs);
+  }
+  .card-fav {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-fav:hover { transform: scale(1.08); }
+  .card-fav svg { width: 17px; height: 17px; }
+
+  .card-meta {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .card-title {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.3;
+    margin-bottom: 4px;
+    transition: color 0.15s;
+    color: var(--ink);
+  }
+  .card-address {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-bottom: 16px;
+  }
+  .card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .card-price {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .card-features {
+    display: flex;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .card-features span { display: flex; align-items: center; gap: 4px; }
+
+  /* ============== ZONAS ============== */
+  .zones-section { background: var(--bg-soft); padding: 96px 40px; }
+  .zones-inner { max-width: 1320px; margin: 0 auto; }
+  .zones-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 280px 280px;
+    gap: 16px;
+  }
+  .zone {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--ink);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s;
+  }
+  .zone:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .zone:nth-child(1) { grid-row: 1 / 3; }
+  .zone img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.5s ease;
+    opacity: 0.92;
+  }
+  .zone:hover img { transform: scale(1.04); opacity: 1; }
+  .zone-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: white;
+  }
+  .zone-name {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+  .zone:nth-child(1) .zone-name { font-size: 36px; font-weight: 400; }
+  .zone-count {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+
+  /* ============== VENDÉ TU PROPIEDAD ============== */
+  .sell-cta {
+    background: var(--brand-deep);
+    color: white;
+    padding: 96px 40px;
+    margin-top: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .sell-cta::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 60%);
+  }
+  .sell-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 80px;
+    align-items: center;
+    position: relative;
+  }
+  .sell-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 16px;
+  }
+  .sell-title {
+    font-size: 48px;
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+  .sell-title strong { font-weight: 600; }
+  .sell-text {
+    font-size: 16px;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 32px;
+    max-width: 480px;
+  }
+  .sell-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+  .btn-light {
+    background: white;
+    color: var(--ink);
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-light:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-ghost-light {
+    background: transparent;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn-ghost-light:hover {
+    border-color: white;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .sell-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .sell-step {
+    display: flex;
+    gap: 20px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.15s;
+  }
+  .sell-step:hover { background: rgba(255, 255, 255, 0.08); }
+  .step-num {
+    font-size: 32px;
+    font-weight: 300;
+    color: white;
+    line-height: 1;
+    min-width: 32px;
+  }
+  .step-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: rgba(255, 255, 255, 0.65); line-height: 1.5; }
+
+  /* ============== TRUST ============== */
+  .trust { padding: 80px 40px; max-width: 1320px; margin: 0 auto; }
+  .trust-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .trust-item {
+    padding: 32px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    transition: border-color 0.15s, transform 0.2s;
+  }
+  .trust-item:hover {
+    border-color: var(--brand);
+    transform: translateY(-2px);
+  }
+  .trust-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--brand-soft);
+    color: var(--brand-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .trust-icon svg { width: 20px; height: 20px; }
+  .trust-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; color: var(--ink); }
+  .trust-text { font-size: 14px; color: var(--ink-muted); line-height: 1.6; }
+
+  /* ============== FOOTER ============== */
+  .footer {
+    background: var(--bg-soft);
+    border-top: 1px solid var(--line);
+    padding: 64px 40px 40px;
+  }
+  .footer-inner { max-width: 1320px; margin: 0 auto; }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 48px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 32px;
+  }
+  .footer-brand-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .footer-brand-name .dot { color: var(--brand); }
+  .footer-tagline {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    max-width: 280px;
+    margin-bottom: 24px;
+  }
+  .footer-contact { font-size: 13px; color: var(--ink-soft); line-height: 1.7; }
+  .footer-contact strong { color: var(--ink); display: block; margin-bottom: 4px; }
+
+  .footer-col h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-col a { font-size: 13px; color: var(--ink-soft); transition: color 0.15s; }
+  .footer-col a:hover { color: var(--brand); }
+
+  .footer-seo {
+    padding: 32px 0;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .footer-seo h4 {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-muted);
+    margin-bottom: 16px;
+  }
+  .footer-seo-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+  .footer-seo-links a {
+    font-size: 12px;
+    color: var(--ink-soft);
+    transition: color 0.15s;
+  }
+  .footer-seo-links a:hover { color: var(--brand); }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .footer-bottom-links { display: flex; gap: 24px; }
+  .footer-bottom-links a:hover { color: var(--brand); }
+
+  /* ============== RESPONSIVE LIGHT ============== */
+  @media (max-width: 960px) {
+    .hero { padding: 56px 24px 40px; }
+    .hero-title { font-size: 44px; }
+    .search-fields { grid-template-columns: 1fr; }
+    .props-grid { grid-template-columns: 1fr; }
+    .metrics-inner { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+    .zones-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+    .zones-grid .zone:nth-child(1) { grid-row: auto; }
+    .sell-inner { grid-template-columns: 1fr; gap: 48px; }
+    .trust-grid { grid-template-columns: 1fr; }
+    .footer-top { grid-template-columns: 1fr; gap: 32px; }
+    .nav-links { display: none; }
+    .section { padding: 64px 24px; }
+    .section-title { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============== NAV ============== -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="logo">Atrio<span class="dot">.</span></a>
+      <ul class="nav-links">
+        <li><a href="#">Comprar</a></li>
+        <li><a href="#">Alquilar</a></li>
+        <li><a href="#">Vender</a></li>
+        <li><a href="#">Emprendimientos</a></li>
+        <li><a href="#">Nosotros</a></li>
+        <li><a href="#">Contacto</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="#" class="nav-link-action">Iniciar sesión</a>
+        <button class="btn-publish">Publicar propiedad</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============== HERO ============== -->
+  <section class="hero">
+    <div class="hero-eyebrow">Inmobiliaria · Buenos Aires</div>
+    <h1 class="hero-title">Encontrá la casa <strong>en la que querés vivir.</strong></h1>
+    <p class="hero-subtitle">Más de 1.200 propiedades en venta y alquiler en Capital y Gran Buenos Aires, gestionadas por agentes matriculados.</p>
+
+    <!-- BUSCADOR -->
+    <div class="search-wrap">
+      <div class="search-tabs">
+        <button class="tab active">Comprar</button>
+        <button class="tab">Alquilar</button>
+        <button class="tab">Alquiler temporario</button>
+        <button class="tab">Emprendimientos</button>
+      </div>
+
+      <div class="search-fields">
+        <div class="field">
+          <label class="field-label">¿Dónde?</label>
+          <input class="field-value" type="text" placeholder="Barrio, ciudad o zona">
+        </div>
+        <div class="field">
+          <label class="field-label">Tipo</label>
+          <input class="field-value" type="text" value="Departamentos, Casas">
+        </div>
+        <div class="field">
+          <label class="field-label">Precio</label>
+          <input class="field-value" type="text" placeholder="Hasta USD —">
+        </div>
+        <button class="search-submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Buscar
+        </button>
+      </div>
+    </div>
+
+    <div class="quick-searches">
+      <span class="quick-label">Búsquedas frecuentes:</span>
+      <button class="chip">2 ambientes en Caballito</button>
+      <button class="chip">Casas en Devoto</button>
+      <button class="chip">Aptos crédito</button>
+      <button class="chip">Hasta USD 100.000</button>
+      <button class="chip">Con cochera</button>
+    </div>
+  </section>
+
+  <!-- ============== METRICS ============== -->
+  <section class="metrics">
+    <div class="metrics-inner">
+      <div>
+        <div class="metric-num"><strong>1.247</strong></div>
+        <div class="metric-label">Propiedades activas</div>
+      </div>
+      <div>
+        <div class="metric-num"><strong>23</strong></div>
+        <div class="metric-label">Agentes matriculados</div>
+      </div>
+      <div>
+        <div class="metric-num"><strong>18</strong></div>
+        <div class="metric-label">Años en el mercado</div>
+      </div>
+      <div>
+        <div class="metric-num"><strong>94%</strong></div>
+        <div class="metric-label">Operaciones cerradas en menos de 90 días</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== DESTACADAS ============== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-head-left">
+        <div class="section-eyebrow">Destacadas</div>
+        <h2 class="section-title">Una selección <strong>de esta semana.</strong></h2>
+      </div>
+      <a href="#" class="section-link">Ver todas las propiedades →</a>
+    </div>
+
+    <div class="props-grid">
+      <article class="property-card">
+        <div class="card-image">
+          <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&q=80" alt="">
+          <span class="card-tag">Venta</span>
+          <button class="card-fav">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </div>
+        <div class="card-meta">3 amb · Caballito</div>
+        <h3 class="card-title">Piso alto con balcón aterrazado</h3>
+        <p class="card-address">Av. Rivadavia al 5400</p>
+        <div class="card-bottom">
+          <div class="card-price">USD 165.000</div>
+          <div class="card-features">
+            <span>68 m²</span>
+            <span>·</span>
+            <span>2 dorm</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="property-card">
+        <div class="card-image">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900&q=80" alt="">
+          <span class="card-tag">Alquiler</span>
+          <button class="card-fav">
+            <svg viewBox="0 0 24 24" fill="#1B6B47" stroke="#1B6B47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </div>
+        <div class="card-meta">4 amb · Villa Devoto</div>
+        <h3 class="card-title">Casa con jardín y quincho</h3>
+        <p class="card-address">Mercedes 2300</p>
+        <div class="card-bottom">
+          <div class="card-price">$ 850.000<span style="font-size:13px;color:var(--ink-muted);font-weight:400;">/mes</span></div>
+          <div class="card-features">
+            <span>140 m²</span>
+            <span>·</span>
+            <span>3 dorm</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="property-card">
+        <div class="card-image">
+          <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=900&q=80" alt="">
+          <span class="card-tag">Venta</span>
+          <button class="card-fav">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </div>
+        <div class="card-meta">2 amb · Almagro</div>
+        <h3 class="card-title">Monoambiente reciclado</h3>
+        <p class="card-address">Bulnes 1100</p>
+        <div class="card-bottom">
+          <div class="card-price">USD 92.500</div>
+          <div class="card-features">
+            <span>38 m²</span>
+            <span>·</span>
+            <span>1 dorm</span>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============== ZONAS ============== -->
+  <section class="zones-section">
+    <div class="zones-inner">
+      <div class="section-head">
+        <div class="section-head-left">
+          <div class="section-eyebrow">Por zona</div>
+          <h2 class="section-title">Buscá <strong>en el barrio que querés.</strong></h2>
+        </div>
+        <a href="#" class="section-link">Ver todas las zonas →</a>
+      </div>
+
+      <div class="zones-grid">
+        <a href="#" class="zone">
+          <img src="https://images.unsplash.com/photo-1543349689-9a4d426bee8e?w=1200&q=80" alt="">
+          <div class="zone-overlay">
+            <div class="zone-name">Capital Federal</div>
+            <div class="zone-count">684 propiedades</div>
+          </div>
+        </a>
+        <a href="#" class="zone">
+          <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80" alt="">
+          <div class="zone-overlay">
+            <div class="zone-name">Zona Norte</div>
+            <div class="zone-count">312 propiedades</div>
+          </div>
+        </a>
+        <a href="#" class="zone">
+          <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80" alt="">
+          <div class="zone-overlay">
+            <div class="zone-name">Zona Oeste</div>
+            <div class="zone-count">158 propiedades</div>
+          </div>
+        </a>
+        <a href="#" class="zone">
+          <img src="https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800&q=80" alt="">
+          <div class="zone-overlay">
+            <div class="zone-name">Zona Sur</div>
+            <div class="zone-count">93 propiedades</div>
+          </div>
+        </a>
+        <a href="#" class="zone">
+          <img src="https://images.unsplash.com/photo-1494526585095-c41746248156?w=800&q=80" alt="">
+          <div class="zone-overlay">
+            <div class="zone-name">Costa Atlántica</div>
+            <div class="zone-count">47 propiedades</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== VENDÉ TU PROPIEDAD ============== -->
+  <section class="sell-cta">
+    <div class="sell-inner">
+      <div>
+        <div class="sell-eyebrow">¿Tenés una propiedad?</div>
+        <h2 class="sell-title">Te ayudamos a <strong>venderla o alquilarla.</strong></h2>
+        <p class="sell-text">Tasación sin cargo, fotografía profesional incluida y un agente matriculado dedicado durante todo el proceso. Sin sorpresas, sin letra chica.</p>
+        <div class="sell-actions">
+          <button class="btn-light">Solicitar tasación gratis</button>
+          <button class="btn-ghost-light">Cómo trabajamos</button>
+        </div>
+      </div>
+      <div class="sell-steps">
+        <div class="sell-step">
+          <div class="step-num">01</div>
+          <div>
+            <div class="step-title">Tasación profesional</div>
+            <div class="step-desc">Visitamos la propiedad y te entregamos un valor de mercado fundamentado.</div>
+          </div>
+        </div>
+        <div class="sell-step">
+          <div class="step-num">02</div>
+          <div>
+            <div class="step-title">Producción y publicación</div>
+            <div class="step-desc">Fotografía, descripción, plano y publicación en todos los portales.</div>
+          </div>
+        </div>
+        <div class="sell-step">
+          <div class="step-num">03</div>
+          <div>
+            <div class="step-title">Cierre y escritura</div>
+            <div class="step-desc">Acompañamos cada visita, oferta y todo el proceso hasta la firma.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== TRUST ============== -->
+  <section class="trust">
+    <div class="section-head" style="margin-bottom: 32px;">
+      <div class="section-head-left">
+        <div class="section-eyebrow">Por qué Atrio</div>
+        <h2 class="section-title">Una inmobiliaria <strong>como tiene que ser.</strong></h2>
+      </div>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-item">
+        <div class="trust-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3 class="trust-title">Agentes matriculados</h3>
+        <p class="trust-text">Todo nuestro equipo está inscripto en el Colegio de Corredores. Cada operación tiene un responsable identificable.</p>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3 class="trust-title">Respuesta en menos de 2 horas</h3>
+        <p class="trust-text">Cuando consultás por una propiedad, te contestamos rápido. Sin esperas de tres días ni mensajes que se pierden.</p>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <h3 class="trust-title">Información clara</h3>
+        <p class="trust-text">Expensas reales, ABL, antigüedad y estado del título publicados antes de que tengas que preguntar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== FOOTER ============== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div>
+          <div class="footer-brand-name">Atrio<span class="dot">.</span></div>
+          <p class="footer-tagline">Inmobiliaria con base en Buenos Aires. Compra, venta y alquiler de propiedades en Capital y GBA.</p>
+          <div class="footer-contact">
+            <strong>Av. Corrientes 1234, CABA</strong>
+            +54 11 4567-8900<br>
+            hola@atrio.com.ar
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Propiedades</h4>
+          <ul>
+            <li><a href="#">Comprar</a></li>
+            <li><a href="#">Alquilar</a></li>
+            <li><a href="#">Alquiler temporario</a></li>
+            <li><a href="#">Emprendimientos</a></li>
+            <li><a href="#">Tasaciones</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Empresa</h4>
+          <ul>
+            <li><a href="#">Nosotros</a></li>
+            <li><a href="#">Agentes</a></li>
+            <li><a href="#">Sumate al equipo</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Contacto</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legales</h4>
+          <ul>
+            <li><a href="#">Términos y condiciones</a></li>
+            <li><a href="#">Política de privacidad</a></li>
+            <li><a href="#">Defensa al consumidor</a></li>
+            <li><a href="#">Matrícula CUCICBA</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-seo">
+        <h4>Búsquedas más frecuentes</h4>
+        <div class="footer-seo-links">
+          <a href="#">Departamentos en venta en Caballito</a>
+          <a href="#">Departamentos en alquiler en Palermo</a>
+          <a href="#">Casas en venta en Devoto</a>
+          <a href="#">2 ambientes en Almagro</a>
+          <a href="#">3 ambientes en Belgrano</a>
+          <a href="#">Casas en alquiler en San Isidro</a>
+          <a href="#">Departamentos aptos crédito en CABA</a>
+          <a href="#">PH en venta en Villa Urquiza</a>
+          <a href="#">Monoambientes en Recoleta</a>
+          <a href="#">Departamentos a estrenar en Núñez</a>
+          <a href="#">Casas con cochera en Vicente López</a>
+          <a href="#">Departamentos con balcón en Villa Crespo</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 Atrio Inmobiliaria · CUCICBA Mat. 0000</div>
+        <div class="footer-bottom-links">
+          <a href="#">Información al consumidor</a>
+          <a href="#">Botón de arrepentimiento</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
