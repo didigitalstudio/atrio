@@ -11,8 +11,8 @@ Plataforma SaaS para inmobiliarias argentinas. Compra, alquiler, alquiler tempor
 - **Producción**: https://atrio-omega.vercel.app — la home funciona y trae datos reales de Supabase.
 - **Repo**: https://github.com/didigitalstudio/atrio (privado, default `main`, CI verde).
 - **Stack**: Next 16 + React 19 + Tailwind 4 + shadcn/ui (base-nova) + Supabase (sa-east-1) + Manrope.
-- **Hecho**: setup, design system, home pública completa (nav, hero+buscador, métricas, propiedades destacadas, zonas grid, sell CTA, trust strip, footer), schema DB con 6 tablas + seed, query real conectada.
-- **Falta** (priorizado abajo): cada link del nav hoy es 404 — `/comprar`, `/alquilar`, `/temporario`, `/emprendimientos`, `/nosotros`, `/contacto`, `/tasaciones`, `/login`, `/publicar`, `/buscar`, `/propiedades/[slug]`, dashboard admin.
+- **Hecho**: setup + design system + schema DB con 6 tablas + seed + **todo el sitio público** (home, listings `/comprar` `/alquilar` `/temporario` `/emprendimientos`, búsqueda unificada `/buscar`, detalle `/propiedades/[slug]`, institucional `/nosotros`, formularios `/contacto` y `/tasaciones`). HeroSearch ya navega de verdad. Server actions `createLead` y `createTasacion` insertan a Supabase con RLS de INSERT público.
+- **Falta** (priorizado abajo): auth (`/login`), `/publicar` para inmobiliarias, dashboard admin en `app/(admin)/`. Más pulidos: bucket Storage propio, counts reales por zona, sitemap dinámico, OG dinámico, Mapbox en detalle, Resend transaccional.
 - **Antes de codear**: leé este archivo entero (especialmente "Reglas críticas" y "Para el próximo dev").
 
 ---
@@ -108,24 +108,30 @@ Manrope, una sola familia. Jerarquía por **peso**, no por familia.
 
 ```
 app/
-  (public)/        → rutas públicas (búsqueda, detalle propiedad, etc.)
-  (admin)/         → rutas protegidas para inmobiliarias
+  (public)/        → comprar, alquilar, temporario, emprendimientos, buscar,
+                     contacto, tasaciones, nosotros, propiedades/[slug]
+  (admin)/         → rutas protegidas para inmobiliarias (vacío)
   page.tsx         → home pública (raíz)
   layout.tsx       → root layout (Manrope, Nav, Footer, Toaster)
   globals.css      → tokens Atrio + @theme inline + tokens shadcn mapeados
 components/
-  property/        → property-card, favorite-button, zones-grid
-  search/          → hero-search
+  property/        → property-card, favorite-button, zones-grid,
+                     property-filters, property-listing, property-pagination
+  search/          → hero-search (rutea por tab + parsea inputs)
+  forms/           → contact-form, tasacion-form (RHF + zod)
   admin/           → UI de panel inmobiliaria (vacío todavía)
   shared/          → nav, footer
   ui/              → componentes shadcn (no editar manualmente salvo override)
 lib/
   supabase/        → server.ts (cliente SSR), types.ts (tipos generados)
+  schemas/         → lead.ts, tasacion.ts (zod, fuente de verdad cliente+server)
+  search-params.ts → parsers compartidos para URL searchParams
   types.ts         → types de dominio (Propiedad, enums)
   utils.ts         → cn() y otros utilitarios
 server/
-  actions/         → server actions ("use server") — vacío todavía
-  queries/         → properties.ts (getFeaturedProperties)
+  actions/         → leads.ts (createLead), tasaciones.ts (createTasacion)
+  queries/         → properties.ts (getFeaturedProperties, getProperties,
+                     getPropertyBySlug, getZonas), agentes.ts
 supabase/
   migrations/      → 0001_initial_schema.sql, 0002_seed.sql
 mockups/           → 01-design-system-v2.html, 02-home-v2.html
@@ -248,7 +254,12 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 - `components/property/property-card.tsx` (server) — foto 4:3 con shadow-sm, badge operación, meta uppercase, título, address, precio Intl es-AR, features con punto separador, hover translate-y + scale en foto. Esconde "X dorm" cuando dormitorios = 0 (caso monoambiente).
 - `components/property/favorite-button.tsx` (client) — toggle local del corazón. TODO: persistir cuando haya auth + tabla favoritos.
 - `components/property/zones-grid.tsx` (server) — grilla de 5 regiones top-level con foto Unsplash, overlay gradient, count aproximado. Layout 3 cols × 2 rows con primera región doble row.
-- `components/search/hero-search.tsx` (client) — tabs Comprar/Alquilar/Temporario/Emprendimientos, 3 fields con divisores grises sutiles (truco `gap-px` sobre `bg-line`), CTA "Buscar" verde brand. **Submit hace `console.log`** — falta la página `/buscar` que reciba los params.
+- `components/property/property-listing.tsx` (server) — orquestador de listing: header con conteo, sidebar de filtros sticky en desktop + collapsible en mobile (con `<details>`, sin JS), grid de cards, paginación, empty state. Configurable con `lockedFilters` (filtros que la ruta impone) y flags `hideTipoField` / `showOperacionField`.
+- `components/property/property-filters.tsx` (server) — `<form method="get">` con `<select>` nativos para zona/tipo/ambientes/moneda + `<input type="number">` para precio min/max. Pure server, sin JS. Botones "Aplicar" y "Limpiar".
+- `components/property/property-pagination.tsx` (server) — links prev/numerados/next, preserva todos los searchParams, ventana de 7 con elipsis cuando hay muchas páginas.
+- `components/search/hero-search.tsx` (client) — tabs Comprar/Alquilar/Temporario/Emprendimientos. **Navega de verdad**: por tab a `/comprar`/`/alquilar`/`/temporario`/`/emprendimientos`. Slugifica el campo "¿Dónde?" → `?zona=`, matchea "Tipo" contra el enum (`/depart|monoamb/i` → departamento, etc), parsea "Precio" → `?precio_max=N` + detecta moneda. Quick searches apuntan a rutas reales con params.
+- `components/forms/contact-form.tsx` (client) — RHF + zod. Reusable: opcionalmente recibe `propiedadId` y `defaultMensaje` para usar como "consultar por esta propiedad". Llama a `createLead` action, toast con sonner.
+- `components/forms/tasacion-form.tsx` (client) — RHF + zod. Tipo en select nativo (`tipo_propiedad_tasacion` enum, sin emprendimiento ni cochera), ambientes y m² como string-validados (ver gotcha más abajo). Llama a `createTasacion`.
 - `components/ui/form.tsx` — wrapper RHF clásico (Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage, useFormField).
 - shadcn instalados: button, card, dialog, input, label, select, textarea, table, tabs, sheet, badge, avatar, dropdown-menu, sonner, separator.
 
@@ -256,88 +267,36 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 - `lib/types.ts` — type `Propiedad` con zona embebida + enums (`Operacion`, `TipoPropiedad`, `EstadoPropiedad`, `Moneda`, `Foto`, `ZonaResumen`).
 - `lib/supabase/types.ts` — types generados de DB con `supabase gen types`.
 - `lib/supabase/server.ts` — `createClient()` server-side con `@supabase/ssr` y cookies de `next/headers`.
-- `server/queries/properties.ts` — `getFeaturedProperties()` con SELECT real + join `zonas`, filtros `destacada=true` + `estado=activa`, mapper row → Propiedad. **Verificado en el deploy de prod**.
+- `lib/search-params.ts` — parsers reusables (`parseInt0`, `parseEnum`, `parseString`) + `parseUserPropertyFilters(sp)` que devuelve un objeto tipado a partir de cualquier `searchParams` (`?op=...&zona=...&tipo=...&ambientes_min=...&precio_min=...&precio_max=...&moneda=...&page=...`).
+- `lib/schemas/lead.ts` — schema zod compartido cliente+server para crear leads (`nombre`, `email`, `telefono`, `mensaje`, `propiedadId?`).
+- `lib/schemas/tasacion.ts` — schema zod compartido para tasaciones. Incluye `TIPOS_TASACION` y un helper `numericString(min, max, msg)` para validar enteros opcionales como string (ver gotcha de zod+RHF).
+- `server/queries/properties.ts` — `getFeaturedProperties()`, `getProperties(filters)` (count + `.range()` paginado, todos los filtros del schema, `!inner` join con zonas para filtrar por slug), `getPropertyBySlug(slug)` (estados `activa` o `reservada`, retorna `null` si no existe), `getZonas()`. Mapper `toPropiedad` compartido.
+- `server/queries/agentes.ts` — `getAgentes()` filtra `activo=true`, `getAgenteById(id)` para el detalle.
+- `server/actions/leads.ts` — `createLead(input)` con validación zod en server, INSERT a `leads` con `canal='web'`. Retorna `{ ok: true } | { ok: false, error }`.
+- `server/actions/tasaciones.ts` — `createTasacion(input)` análogo, INSERT a `tasaciones` con conversión string → number en `ambientes` y `m2`.
 
 ### Home pública (`app/page.tsx`)
-- Hero con eyebrow + display 1 + subtitle + `HeroSearch`.
+- Hero con eyebrow + display 1 + subtitle + `HeroSearch` (que ahora rutea de verdad).
 - Metrics strip (1.247 propiedades / 23 agentes / 18 años / 94% cierres < 90 días) — números hardcoded por ahora.
 - Sección "Destacadas" con 3 `PropertyCard` desde `getFeaturedProperties()`.
 - Sección "Por zona" con `ZonesGrid`.
 - Sell CTA bg-brand-deep con botones "Solicitar tasación" + "Cómo trabajamos".
 - Trust strip de 3 items (agentes matriculados, respuesta < 2h, info clara).
 
+### Sitio público completo (`app/(public)/`)
+- **`/comprar`, `/alquilar`, `/temporario`** — listings filtrados por `operacion`. Cada page parsea searchParams con `parseUserPropertyFilters` y delega a `<PropertyListing>` con su `lockedFilters`. Archivos de ~25 líneas.
+- **`/emprendimientos`** — mismo template pero con `lockedFilters: { tipo: 'emprendimiento' }` y `hideTipoField` (no muestra el dropdown de tipo, ya está fijo).
+- **`/buscar`** — listing unificado. `lockedFilters: {}` y `showOperacionField`: el usuario elige operación en el sidebar. Las QUICK_SEARCHES del HeroSearch apuntan acá o a `/comprar`/`/alquilar`/`/emprendimientos`.
+- **`/propiedades/[slug]`** — detalle. `getPropertyBySlug` + `getAgenteById` en paralelo. `notFound()` si no existe. Galería con CSS scroll-snap horizontal (sin JS, sin lib externa). Header con badges de operación + tipo + zona, precio destacado con expensas opcionales, grid de quick-facts (ambientes, dormitorios, m² cubiertos, m² totales, antigüedad, baños), descripción, chips de features, banner "Apto crédito" si aplica. Sidebar con card del agente (foto + matrícula + WhatsApp directo a `wa.me/<digits>?text=...`), `<ContactForm>` con `propiedadId` y `defaultMensaje` pre-armado, links rápidos a otras búsquedas. `generateMetadata` con OG image desde `propiedad.fotos[0]`.
+- **`/contacto`** — hero + grid 2 columnas: form `<ContactForm>` a la izquierda, 4 cards de contacto (dirección, teléfono, WhatsApp, email) a la derecha. La página es server component; el form es client.
+- **`/tasaciones`** — hero + form `<TasacionForm>` + sidebar con bullets ("cómo trabajamos") y mensaje claro de no compromiso.
+- **`/nosotros`** — hero institucional + 3 valores en cards (info clara / equipo matriculado / buen trato) + grid del equipo desde `getAgentes()` con foto/iniciales fallback / matrícula / bio. CTA al final hacia `/contacto` y `/tasaciones`.
+
 ---
 
 ## 🔨 Lo que falta — priorizado
 
-### 🔥 Alta prioridad — pages del nav (hoy todas son 404)
-
-#### `/comprar`, `/alquilar`, `/temporario`, `/emprendimientos`
-
-Listing de propiedades filtrado por `operacion` (y por `tipo='emprendimiento'` para la última).
-
-**Pistas de implementación**:
-- Probablemente conviene un solo template parametrizado: `app/(public)/[operacion]/page.tsx` que recibe `operacion` y filtra. Para `emprendimientos`, una page propia que filtra por tipo.
-- Reusar `PropertyCard` que ya existe.
-- Crear `getProperties({ operacion, tipo, zona, ambientes, precioMin, precioMax, page })` en `server/queries/properties.ts`.
-- Filtros: sidebar a la izquierda (sticky en desktop), inline en mobile. Inputs ya disponibles en `components/ui/`.
-- Paginación: 12 por página. Server-side con `searchParams`.
-- Estado vacío: cuando no hay resultados, mensaje claro + sugerencia de relajar filtros.
-- **No hay mockup específico** — usar el design system del home como base.
-
-#### `/propiedades/[slug]`
-
-Detalle de una propiedad.
-
-**Pistas**:
-- Server query: `getPropertyBySlug(slug)` con join a `zonas` y `agentes`.
-- Galería: instalar carrusel (sugerencia: `embla-carousel-react`).
-- Bloque info: precio destacado, expensas, ambientes, m², features (chips desde `features[]`).
-- Mapa con `ubicacion` (PostGIS POINT) usando Mapbox — token va en `NEXT_PUBLIC_MAPBOX_TOKEN`.
-- Card del agente con WhatsApp clickeable (`https://wa.me/<numero>?text=...`).
-- Form "Consultar por esta propiedad" → server action que hace `INSERT INTO leads` con `propiedad_id`.
-- Si no encuentra slug → `notFound()` de `next/navigation`.
-
-#### `/contacto`
-
-Form general de contacto.
-
-**Pistas**:
-- Form con: nombre, email, teléfono, mensaje. RHF + zod.
-- Server action → `INSERT INTO leads` con `canal='web'`, `propiedad_id=null`.
-- Toast de éxito con sonner.
-- Datos de contacto a la izquierda (los del Footer): dirección, teléfono, email.
-- Mapa opcional con la oficina (Av. Corrientes 1234).
-
-#### `/tasaciones`
-
-Form de solicitud de tasación.
-
-**Pistas**:
-- Form con: nombre, email, teléfono, dirección, tipo, ambientes, m², comentarios. RHF + zod.
-- Server action → `INSERT INTO tasaciones` con `estado='solicitada'`.
-- Toast de éxito + mensaje "Te contactamos en menos de 48h".
-- Hero arriba con texto claro: "Tasación gratuita y sin compromiso".
-
-#### `/nosotros`
-
-Página institucional.
-
-**Pistas**:
-- Texto institucional (ver Footer/Trust del home para tono).
-- Sección "Nuestro equipo" con SELECT a `agentes WHERE activo=true`. Reusar `Avatar` de shadcn.
-- Layout sobrio con secciones grandes y mucho whitespace.
-
-#### `/buscar`
-
-Página de resultados del buscador del hero.
-
-**Pistas**:
-- Recibe `searchParams` (`tab`, `donde`, `tipo`, `precio`).
-- Reusa `getProperties` con esos filters.
-- Misma grilla de PropertyCards.
-- Header con resumen del filtro aplicado: "Propiedades en Caballito · venta · departamentos · hasta USD 200.000".
-- **Conectar el submit del `HeroSearch`** que hoy hace `console.log`. Cambiar a `router.push('/buscar?...')`.
+> 🔥 La Alta prioridad (todo el sitio público: 9 rutas + HeroSearch wired + 2 server actions) está cerrada — ver "Sitio público completo" en la sección anterior.
 
 ### 🌑 Media prioridad — auth y admin
 
@@ -400,6 +359,8 @@ Página de resultados del buscador del hero.
 - **`form` de shadcn** — no está en el registry base-nova. El wrapper está hecho a mano en `components/ui/form.tsx`.
 - **Conexión DB desde CLI** — `supabase db push` necesita `--password`. Si la red no soporta IPv6, asegurate que `supabase link` haya quedado con pooler (re-link con `--password` lo arregla).
 - **`params` y `searchParams` son `Promise`** en pages/layouts de Next 16. Hay que `await` antes de usar.
+- **`z.coerce.number()` + `useForm` rompen los types**: el input type de `z.coerce` es `unknown` y el output es `number`, así el `Resolver` de RHF no calza con `useForm<TFieldValues>`. Workaround usado en `lib/schemas/tasacion.ts`: campos numéricos como `z.string().refine()` con un helper `numericString(min, max, msg)`, y el server action convierte con `parseInt(value, 10)` antes del INSERT. Si volvés a meter números en un form, copiá ese patrón en lugar de pelearte con `z.coerce`.
+- **`getProperties` filtra por `zona.slug` con `!inner` join**: `supabase .select("*, zona:zonas!inner(...)")` + `.eq("zona.slug", value)`. Sin `!inner` el filtro no aplica al row principal.
 
 ### Reglas del flujo de trabajo con humano
 - Tareas grandes (página completa, refactor, migration nueva): mostrar **plan** primero, esperar OK, después codear pieza por pieza.

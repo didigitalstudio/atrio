@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 
@@ -15,28 +16,79 @@ const TABS: { id: SearchTab; label: string }[] = [
 ];
 
 const QUICK_SEARCHES = [
-  { href: "/buscar?op=venta&amb=2&zona=caballito", label: "2 ambientes en Caballito" },
-  { href: "/buscar?op=venta&tipo=casa&zona=devoto", label: "Casas en Devoto" },
-  { href: "/buscar?op=venta&apto-credito=1", label: "Aptos crédito" },
-  { href: "/buscar?op=venta&max=100000", label: "Hasta USD 100.000" },
-  { href: "/buscar?op=venta&cochera=1", label: "Con cochera" },
+  { href: "/comprar?ambientes_min=2&zona=caballito", label: "2 ambientes en Caballito" },
+  { href: "/comprar?tipo=casa&zona=villa-devoto", label: "Casas en Devoto" },
+  { href: "/comprar?precio_max=100000&moneda=USD", label: "Hasta USD 100.000" },
+  { href: "/alquilar?ambientes_min=3", label: "Alquiler 3+ ambientes" },
+  { href: "/emprendimientos", label: "Emprendimientos" },
 ];
 
+const TIPO_HINTS: { match: RegExp; value: string }[] = [
+  { match: /depart|monoamb/i, value: "departamento" },
+  { match: /casa/i, value: "casa" },
+  { match: /\bph\b/i, value: "ph" },
+  { match: /terreno|lote/i, value: "terreno" },
+  { match: /local/i, value: "local" },
+  { match: /oficin/i, value: "oficina" },
+  { match: /cochera|garage/i, value: "cochera" },
+  { match: /emprend/i, value: "emprendimiento" },
+];
+
+function slugify(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function parsePrecio(input: string): { max?: number; moneda?: "USD" | "ARS" } {
+  const cleaned = input.replace(/[^\d.,a-zA-Z\s]/g, "");
+  const num = Number.parseInt(cleaned.replace(/[^\d]/g, ""), 10);
+  const max = Number.isFinite(num) && num > 0 ? num : undefined;
+  let moneda: "USD" | "ARS" | undefined;
+  if (/\busd\b|u\$s|d[oó]lar/i.test(input)) moneda = "USD";
+  else if (/\bars\b|peso/i.test(input) || input.trim().startsWith("$"))
+    moneda = "ARS";
+  return { max, moneda };
+}
+
+function pickTipo(input: string): string | undefined {
+  if (!input.trim()) return undefined;
+  return TIPO_HINTS.find((h) => h.match.test(input))?.value;
+}
+
+const ROUTE_BY_TAB: Record<SearchTab, string> = {
+  comprar: "/comprar",
+  alquilar: "/alquilar",
+  temporario: "/temporario",
+  emprendimientos: "/emprendimientos",
+};
+
 export function HeroSearch() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<SearchTab>("comprar");
   const [donde, setDonde] = useState("");
-  const [tipo, setTipo] = useState("Departamentos, Casas");
+  const [tipo, setTipo] = useState("");
   const [precio, setPrecio] = useState("");
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: navegar a /buscar con los params armados desde el form
-    console.log("search submit", {
-      tab: activeTab,
-      donde,
-      tipo,
-      precio,
-    });
+
+    const params = new URLSearchParams();
+    const dondeSlug = slugify(donde);
+    if (dondeSlug) params.set("zona", dondeSlug);
+    const tipoEnum = pickTipo(tipo);
+    if (tipoEnum && activeTab !== "emprendimientos") params.set("tipo", tipoEnum);
+    const { max, moneda } = parsePrecio(precio);
+    if (max !== undefined) params.set("precio_max", String(max));
+    if (moneda) params.set("moneda", moneda);
+
+    const qs = params.toString();
+    const url = `${ROUTE_BY_TAB[activeTab]}${qs ? `?${qs}` : ""}`;
+    router.push(url);
   };
 
   return (
@@ -90,7 +142,7 @@ export function HeroSearch() {
               type="text"
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
-              placeholder="Departamentos, Casas"
+              placeholder="Departamento, casa, PH..."
               className="w-full bg-transparent text-[15px] font-medium text-ink outline-none placeholder:font-normal placeholder:text-ink-faint"
             />
           </label>
@@ -103,7 +155,7 @@ export function HeroSearch() {
               type="text"
               value={precio}
               onChange={(e) => setPrecio(e.target.value)}
-              placeholder="Hasta USD —"
+              placeholder="Hasta USD 100.000"
               className="w-full bg-transparent text-[15px] font-medium text-ink outline-none placeholder:font-normal placeholder:text-ink-faint"
             />
           </label>
