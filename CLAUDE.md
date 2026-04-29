@@ -208,9 +208,14 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 ## Conexiones de infra
 
 ### GitHub
-- Repo: https://github.com/didigitalstudio/atrio (privado, default `main`).
-- CI: `.github/workflows/ci.yml` — typecheck + lint en push y PR a `main`.
+- Repo: https://github.com/didigitalstudio/atrio (público, default `main`).
+- CI: `.github/workflows/ci.yml` — typecheck + lint en push y PR a `main`. El check-run se llama `Typecheck & Lint`.
 - Auto-deploy a Vercel: cada push a `main` dispara build automático.
+- **Branch protection en `main`** (activada 2026-04-29):
+  - `Typecheck & Lint` requerido para mergear PRs (strict = branch al día con main).
+  - Force-push y deletions bloqueados.
+  - Conversaciones de PR deben resolverse antes de mergear.
+  - `enforce_admins: false` — el owner puede seguir pusheando directo. Si sumás colaboradores se les aplica el ruleset.
 
 ### Supabase
 - Project ref: `lbnslkasqfbufjkejovj`.
