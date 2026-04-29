@@ -414,8 +414,8 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 ### Estado actual de Resend (al 2026-04-29)
 
 - **API key cargada** en Vercel (Production + Development) y en `.env.local`. Preview todavía no — quirk del CLI con `vercel env add NAME preview`.
-- **Cuenta Resend** registrada bajo `desa.baires@gmail.com` (no `izuralucas@gmail.com`). Por eso `NOTIFICATIONS_EMAIL=desa.baires@gmail.com` está seteado en Vercel — sino los avisos al equipo no llegan.
-- **Sandbox activo**: sin dominio verificado, Resend solo entrega mails al owner de la cuenta (`desa.baires@gmail.com`). Los mails de confirmación a leads, tasaciones y compradores SE INTENTAN MANDAR pero Resend los rechaza con `validation_error`. La operación principal (insert en DB) sigue OK porque cada `notify*` está en try/catch.
+- **`NOTIFICATIONS_EMAIL=info@didigitalstudio.com`** (mail del equipo Atrio donde caen los avisos cuando no hay agente asignado).
+- **Sandbox activo**: la cuenta Resend hoy solo entrega a `desa.baires@gmail.com` (lo dice Resend en el 403). Cualquier otro destinatario — incluyendo `info@didigitalstudio.com` — recibe `validation_error` y queda solo en el log del server. La operación principal (insert en DB) NO se rompe porque cada `notify*` está envuelto en try/catch.
 - **Para liberar el sandbox**: verificar `atrio.com.ar` (o el dominio que se elija) en Resend → Domains → Add → cargar SPF/DKIM/DMARC → esperar verificación. Después: setear `RESEND_FROM="Atrio <noreply@atrio.com.ar>"` en Vercel y los mails empiezan a llegar a cualquier destinatario.
 
 ### Para activar Resend (steps manuales que NO podés hacer desde código)
