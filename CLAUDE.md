@@ -414,9 +414,11 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 ### Estado actual de Resend (al 2026-04-29)
 
 - **API key cargada** en Vercel (Production + Development) y en `.env.local`. Preview todavía no — quirk del CLI con `vercel env add NAME preview`.
-- **`NOTIFICATIONS_EMAIL=info@didigitalstudio.com`** (mail del equipo Atrio donde caen los avisos cuando no hay agente asignado).
-- **Sandbox activo**: la cuenta Resend hoy solo entrega a `desa.baires@gmail.com` (lo dice Resend en el 403). Cualquier otro destinatario — incluyendo `info@didigitalstudio.com` — recibe `validation_error` y queda solo en el log del server. La operación principal (insert en DB) NO se rompe porque cada `notify*` está envuelto en try/catch.
-- **Para liberar el sandbox**: verificar `atrio.com.ar` (o el dominio que se elija) en Resend → Domains → Add → cargar SPF/DKIM/DMARC → esperar verificación. Después: setear `RESEND_FROM="Atrio <noreply@atrio.com.ar>"` en Vercel y los mails empiezan a llegar a cualquier destinatario.
+- **Dominio `didigitalstudio.com` verificado en Resend** (region `sa-east-1`). DNS records SPF + DKIM + return-path MX están en Vercel DNS (los nameservers del dominio son de Vercel, así que se gestionan vía `vercel dns`). Domain ID Resend: `e282c9ec-765d-448c-951d-4e8dec4c207b`.
+- **`RESEND_FROM="Atrio <noreply@didigitalstudio.com>"`** seteado en Vercel + `.env.local`. Los mails ya salen autenticados (DKIM + SPF) desde un sender verificado.
+- **`NOTIFICATIONS_EMAIL=info@didigitalstudio.com`** — mail del equipo Atrio donde caen los avisos cuando no hay agente asignado.
+- **Sandbox liberado**: con dominio verificado, los mails se entregan a cualquier destinatario. Test real enviado y confirmado a `info@didigitalstudio.com` (ID `abd7c620-25eb-4cf0-b699-108072c49c0e`).
+- **Pendiente** (manual desde dashboard): activar Supabase Auth Custom SMTP con Resend para que los mails de verificación de signup salgan también desde `noreply@didigitalstudio.com` en lugar del relay limitado de Supabase.
 
 ### Para activar Resend (steps manuales que NO podés hacer desde código)
 
