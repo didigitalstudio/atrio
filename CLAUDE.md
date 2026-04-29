@@ -6,14 +6,25 @@ Plataforma SaaS para inmobiliarias argentinas. Compra, alquiler, alquiler tempor
 
 ---
 
+## TL;DR para quien abra esto
+
+- **Producción**: https://atrio-omega.vercel.app — la home funciona y trae datos reales de Supabase.
+- **Repo**: https://github.com/didigitalstudio/atrio (privado, default `main`, CI verde).
+- **Stack**: Next 16 + React 19 + Tailwind 4 + shadcn/ui (base-nova) + Supabase (sa-east-1) + Manrope.
+- **Hecho**: setup, design system, home pública completa (nav, hero+buscador, métricas, propiedades destacadas, zonas grid, sell CTA, trust strip, footer), schema DB con 6 tablas + seed, query real conectada.
+- **Falta** (priorizado abajo): cada link del nav hoy es 404 — `/comprar`, `/alquilar`, `/temporario`, `/emprendimientos`, `/nosotros`, `/contacto`, `/tasaciones`, `/login`, `/publicar`, `/buscar`, `/propiedades/[slug]`, dashboard admin.
+- **Antes de codear**: leé este archivo entero (especialmente "Reglas críticas" y "Para el próximo dev").
+
+---
+
 ## Stack
 
 - **Next.js 16** con App Router, Turbopack, TypeScript estricto.
 - **React 19** (incluido por Next).
 - **Tailwind CSS 4** — tokens declarados con `@theme` dentro de `app/globals.css`. **No hay `tailwind.config.ts`**.
-- **shadcn/ui** estilo `base-nova` (sucesor moderno de New York en la nueva arquitectura). Usa **Base UI** como primitiva (no Radix). Configurado en `components.json`. Los componentes viven en `components/ui/`.
-- **Supabase** (Postgres + Auth + Storage). Org `didigitalstudio` (id `gcdhiqhjbpwxfbtftklk`), proyecto `atrio` en region **South America (São Paulo) · sa-east-1**.
-- **Manrope** como tipografía única, vía `next/font/google` (weights 300/400/500/600/700). Variable CSS `--font-sans` cargada en `app/layout.tsx`.
+- **shadcn/ui** estilo `base-nova` (sucesor moderno de New York). Usa **Base UI** (no Radix). Configurado en `components.json`. Componentes en `components/ui/`.
+- **Supabase** (Postgres + Auth + Storage). Proyecto `atrio` en region **South America (São Paulo) · sa-east-1**.
+- **Manrope** como tipografía única, vía `next/font/google` (weights 300/400/500/600/700). Variable CSS `--font-sans` en `app/layout.tsx`.
 - **react-hook-form + zod** para todos los formularios. Validación compartida cliente/servidor con el mismo schema.
 - **lucide-react** para íconos.
 - **date-fns** para fechas.
@@ -27,7 +38,7 @@ Plataforma SaaS para inmobiliarias argentinas. Compra, alquiler, alquiler tempor
 
 ## Sistema de diseño
 
-### Paleta (declarada en `app/globals.css`)
+### Paleta (en `app/globals.css`)
 
 | Token | Valor | Uso |
 |---|---|---|
@@ -63,11 +74,11 @@ Manrope, una sola familia. Jerarquía por **peso**, no por familia.
 
 ### Border radius
 
-- **Cards e imágenes grandes**: `rounded-2xl` (16px en este sistema, vía `--radius` × 1.8 = 1.125rem ≈ 18px — dejamos `rounded-2xl` para que se sienta más amplio que `lg`).
+- **Cards e imágenes grandes**: `rounded-2xl`.
 - **Botones**: `rounded-full` (pill).
 - **Inputs**: `rounded-[10px]` (matchea con `--radius: 0.625rem`).
 
-> El `Button` de shadcn por default usa `rounded-lg`. Para los CTAs de Atrio hay que pasar `className="rounded-full"` o crear una variante. Dejar las decisiones de override centralizadas en el componente de botón compartido si se vuelve repetitivo.
+> El `Button` de shadcn por default usa `rounded-lg`. Para los CTAs de Atrio hay que pasar `className="rounded-full"`. Centralizar overrides si se vuelve repetitivo.
 
 ### Sombras (override de Tailwind default)
 
@@ -89,7 +100,7 @@ Manrope, una sola familia. Jerarquía por **peso**, no por familia.
 - **Imports absolutos** vía alias `@/`: `@/components`, `@/lib`, `@/server`.
 - **Nombres de entidades de negocio en español argentino**: `propiedades`, `leads`, `interacciones`, `agentes`, `zonas`, `tasaciones`.
 - **TypeScript estricto, sin `any`.** Si necesitás escapar el tipo, preferí `unknown` y narrow.
-- **Toda la UI en español argentino. Usar "vos", no "tú".**
+- **Toda la UI en español argentino. Usar "vos", no "tú".** Precios USD con punto de miles ("USD 165.000"). Pesos con `$` separado del número ("$ 850.000").
 - **`html lang="es-AR"`** en el root layout.
 - **Wrapper `Form` para RHF + zod en `components/ui/form.tsx`** (no viene en el registry de base-nova; está armado a mano siguiendo el patrón clásico de shadcn). Exports: `Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormDescription`, `FormMessage`, `useFormField`. Uso típico documentado al inicio del archivo.
 
@@ -100,140 +111,108 @@ app/
   (public)/        → rutas públicas (búsqueda, detalle propiedad, etc.)
   (admin)/         → rutas protegidas para inmobiliarias
   page.tsx         → home pública (raíz)
-  layout.tsx       → root layout (Manrope, Toaster, etc.)
-  globals.css      → tokens Atrio + @theme inline
+  layout.tsx       → root layout (Manrope, Nav, Footer, Toaster)
+  globals.css      → tokens Atrio + @theme inline + tokens shadcn mapeados
 components/
-  property/        → cards, galerías, mapas de propiedades
-  search/          → buscador, filtros, resultados
-  admin/           → UI de panel inmobiliaria
-  shared/          → nav, footer, layout pieces
+  property/        → property-card, favorite-button, zones-grid
+  search/          → hero-search
+  admin/           → UI de panel inmobiliaria (vacío todavía)
+  shared/          → nav, footer
   ui/              → componentes shadcn (no editar manualmente salvo override)
 lib/
-  supabase/        → clientes y helpers de Supabase
+  supabase/        → server.ts (cliente SSR), types.ts (tipos generados)
+  types.ts         → types de dominio (Propiedad, enums)
   utils.ts         → cn() y otros utilitarios
 server/
-  actions/         → server actions ("use server")
-  queries/         → queries (ej: getFeaturedProperties)
+  actions/         → server actions ("use server") — vacío todavía
+  queries/         → properties.ts (getFeaturedProperties)
 supabase/
-  migrations/      → SQL versionado
-mockups/           → specs visuales (HTML) — referencia, no código a copiar
+  migrations/      → 0001_initial_schema.sql, 0002_seed.sql
+mockups/           → 01-design-system-v2.html, 02-home-v2.html
 ```
 
 ---
 
-## Modelo de datos (PROPUESTO — pendiente de aprobación)
+## Modelo de datos (APLICADO en `supabase/migrations/`)
 
-> Este esquema es una propuesta inicial. Antes de escribir migrations en `supabase/migrations/`, validarlo con el dueño del proyecto. Todos los nombres en español, todos los timestamps `timestamptz default now()`, todas las PKs `uuid default gen_random_uuid()`.
+> Schema completo en migration `0001_initial_schema.sql`. Datos iniciales en `0002_seed.sql`. Ambas aplicadas al proyecto remoto. Re-aplicar con `supabase db push --password "<DB>" --yes`. Re-generar types con `supabase gen types typescript --linked > lib/supabase/types.ts` (limpiar a mano la basura del CLI al inicio/fin del archivo).
 
-### `propiedades`
-
-- `id` uuid pk
-- `titulo` text NOT NULL
-- `slug` text UNIQUE — para SEO en URLs
-- `descripcion` text
-- `tipo` enum: `departamento | casa | ph | terreno | local | oficina | cochera | emprendimiento`
-- `operacion` enum: `venta | alquiler | alquiler_temporario`
-- `estado` enum: `borrador | activa | reservada | cerrada | despublicada` (default `borrador`)
-- `direccion` text — string libre, "Av. Rivadavia al 5400"
-- `zona_id` uuid FK → `zonas`
-- `ambientes` int
-- `dormitorios` int
-- `baños` int
-- `m2_cubiertos` numeric
-- `m2_totales` numeric
-- `m2_terraza` numeric
-- `antiguedad` int — años
-- `precio` numeric
-- `moneda` enum: `USD | ARS`
-- `expensas` numeric (nullable)
-- `expensas_moneda` enum: `USD | ARS`
-- `abl_incluido` bool default false
-- `apto_credito` bool default false
-- `destacada` bool default false
-- `features` jsonb default `'[]'` — array de strings: `["cochera", "balcon", "amenities", "a_estrenar", ...]`
-- `fotos` jsonb default `'[]'` — array de `{url, alt, orden}`
-- `agente_id` uuid FK → `agentes`
-- `ubicacion` geography(POINT, 4326) — para búsqueda en mapa (requiere extensión PostGIS)
-- `created_at` timestamptz
-- `updated_at` timestamptz
-
-### `zonas`
-
-- `id` uuid pk
-- `nombre` text NOT NULL — "Caballito"
-- `slug` text UNIQUE
-- `region` enum: `capital_federal | gba_norte | gba_oeste | gba_sur | costa_atlantica | otros`
-- `foto_url` text — para la grilla del home
-- `orden` int default 0
-- `created_at` / `updated_at`
+Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`updated_at` `timestamptz default now()`, trigger `set_updated_at()` y **RLS habilitado**.
 
 ### `agentes`
 
-- `id` uuid pk
-- `user_id` uuid FK → `auth.users` (Supabase Auth)
-- `nombre` text NOT NULL
-- `email` text NOT NULL
-- `telefono` text
-- `whatsapp` text
-- `foto_url` text
-- `matricula` text — número CUCICBA o equivalente
-- `bio` text
-- `activo` bool default true
-- `created_at` / `updated_at`
+`id`, `user_id` FK→`auth.users`, `nombre`, `email`, `telefono`, `whatsapp`, `foto_url`, `matricula`, `bio`, `activo bool default true`. Index en `user_id`. **Policy SELECT pública** (`activo = true`).
+
+### `zonas`
+
+`id`, `nombre`, `slug` UNIQUE, `region` enum (`capital_federal | gba_norte | gba_oeste | gba_sur | costa_atlantica | otros`), `foto_url`, `orden int default 0`. Index en `region`. **Policy SELECT pública** (true).
+
+### `propiedades`
+
+`id`, `titulo`, `slug` UNIQUE, `descripcion`, `tipo` enum (`departamento | casa | ph | terreno | local | oficina | cochera | emprendimiento`), `operacion` enum (`venta | alquiler | alquiler_temporario`), `estado` enum (`borrador | activa | reservada | cerrada | despublicada`, default `borrador`), `direccion`, `zona_id` FK→`zonas`, `ambientes`, `dormitorios`, `banos` (sin ñ), `m2_cubiertos`, `m2_totales`, `m2_terraza`, `antiguedad`, `precio numeric not null`, `moneda` enum (`USD | ARS`), `expensas`, `expensas_moneda`, `abl_incluido`, `apto_credito`, `destacada`, `features jsonb default '[]'`, `fotos jsonb default '[]'` (array de `{url, alt, orden}`), `agente_id` FK→`agentes`, `ubicacion extensions.geography(Point, 4326)` (PostGIS, opcional). Indexes en zona, agente, estado, destacada (parcial), operacion, ubicacion (GiST). **Policy SELECT pública** para `estado IN ('activa', 'reservada')`.
 
 ### `leads`
 
-- `id` uuid pk
-- `propiedad_id` uuid FK → `propiedades` (nullable — un lead puede ser general)
-- `nombre` text NOT NULL
-- `email` text NOT NULL
-- `telefono` text
-- `mensaje` text
-- `canal` enum: `web | whatsapp | telefono | presencial | otro`
-- `estado` enum: `nuevo | contactado | calificado | descartado | convertido` (default `nuevo`)
-- `agente_asignado_id` uuid FK → `agentes` (nullable)
-- `created_at` / `updated_at`
+`id`, `propiedad_id` FK→`propiedades` nullable (lead general), `nombre`, `email`, `telefono`, `mensaje`, `canal` enum (`web | whatsapp | telefono | presencial | otro`, default `web`), `estado` enum (`nuevo | contactado | calificado | descartado | convertido`, default `nuevo`), `agente_asignado_id` FK→`agentes` nullable. Indexes en propiedad, estado, agente. **Policy INSERT pública** (true) para formularios anónimos. SELECT/UPDATE bloqueado para anon.
 
 ### `interacciones`
 
-- `id` uuid pk
-- `lead_id` uuid FK → `leads`
-- `agente_id` uuid FK → `agentes`
-- `tipo` enum: `llamada | whatsapp | email | visita | nota`
-- `contenido` text
-- `created_at`
+`id`, `lead_id` FK→`leads` (cascade delete), `agente_id` FK→`agentes`, `tipo` enum (`llamada | whatsapp | email | visita | nota`), `contenido`. Index en lead. **Sin policies** → totalmente bloqueado para anon (esperando sistema de roles).
 
 ### `tasaciones`
 
-- `id` uuid pk
-- `nombre` text NOT NULL
-- `email` text NOT NULL
-- `telefono` text
-- `direccion` text
-- `tipo` enum (igual que `propiedades.tipo`, sin `emprendimiento`)
-- `ambientes` int
-- `m2` numeric
-- `comentarios` text
-- `estado` enum: `solicitada | en_proceso | completada | descartada` (default `solicitada`)
-- `agente_asignado_id` uuid FK → `agentes` (nullable)
-- `valor_estimado` numeric — lo completa el agente al cerrar
-- `created_at` / `updated_at`
+`id`, `nombre`, `email`, `telefono`, `direccion`, `tipo` enum tasacion (sin `emprendimiento`), `ambientes`, `m2`, `comentarios`, `estado` enum (`solicitada | en_proceso | completada | descartada`, default `solicitada`), `agente_asignado_id` FK→`agentes` nullable, `valor_estimado numeric`. Index en estado. **Policy INSERT pública** (true).
+
+### Datos seed actuales (migration 0002)
+
+- 3 zonas: Caballito, Villa Devoto, Almagro (todas `capital_federal`).
+- 1 agente: María Pérez (`maria@atrio.com.ar`, CUCICBA 7654).
+- 3 propiedades destacadas: "Piso alto con balcón aterrazado" en Caballito (USD 165k venta), "Casa con jardín y quincho" en Villa Devoto ($850k/mes alquiler), "Monoambiente reciclado" en Almagro (USD 92.5k venta). IDs UUID hardcodeados (estables para re-runs).
 
 ### Notas técnicas
 
-- Todas las tablas con **RLS habilitado**. Policies por definir antes del primer release público.
-- `propiedades.ubicacion` requiere `create extension if not exists postgis;` en la primer migration.
-- `propiedades.fotos` se guarda como JSON pero los archivos viven en Supabase Storage (bucket `propiedades/{id}/...`).
-- `slug` se genera a partir del título + barrio en una server action (no en el cliente).
+- `propiedades.fotos` se guarda como JSONB pero los archivos van a Supabase Storage (bucket `propiedades/{id}/...` cuando lo creemos).
+- `slug` se genera a partir de título + barrio en una server action (cuando hagamos el form de publicar). Por ahora los seeds tienen slugs hardcoded.
+- Las policies de **escritura para agentes** se agregan cuando exista auth con roles. Hoy solo hay INSERT público en `leads` y `tasaciones`.
 
 ---
 
 ## Mockups disponibles (en `mockups/`)
 
 - `01-design-system-v2.html` — sistema de diseño completo: paleta, tipografía, botones, inputs, badges, card de propiedad. **Spec visual de tokens y componentes base.**
-- `02-home-v2.html` — home pública: nav, hero con buscador (tabs Comprar/Alquilar/Temporario/Emprendimientos), métricas, propiedades destacadas, grilla de zonas, CTA "vendé tu propiedad", trust strip, footer con SEO links.
+- `02-home-v2.html` — home pública: nav, hero con buscador, métricas, propiedades destacadas, grilla de zonas, CTA "vendé tu propiedad", trust strip, footer con SEO links.
 
 > Los mockups son **specs visuales**. El visual final debe coincidir lo más fielmente posible (proporciones, jerarquía, paleta), pero la implementación es **idiomática Next + Tailwind + shadcn**, no copia literal del CSS plano.
+
+> Para las pages que **no tienen mockup todavía** (comprar, alquilar, contacto, etc.), usar el lenguaje visual del home como referencia: mismas medidas de container (`max-w-[1320px]`, `px-6 md:px-10`), mismas secciones con eyebrow + título display 2 + contenido, mismos cards con `shadow-sm` y `rounded-2xl`. Si tenés dudas de cómo se ve algo, **avisá** y lo definimos antes de codear.
+
+---
+
+## Conexiones de infra
+
+### GitHub
+- Repo: https://github.com/didigitalstudio/atrio (privado, default `main`).
+- CI: `.github/workflows/ci.yml` — typecheck + lint en push y PR a `main`.
+- Auto-deploy a Vercel: cada push a `main` dispara build automático.
+
+### Supabase
+- Project ref: `lbnslkasqfbufjkejovj`.
+- Region: `sa-east-1` (São Paulo).
+- Org: `gcdhiqhjbpwxfbtftklk` (didigitalstudio).
+- Dashboard: https://supabase.com/dashboard/project/lbnslkasqfbufjkejovj
+- URL: `https://lbnslkasqfbufjkejovj.supabase.co`.
+- DB password: la tiene el dueño en su gestor de passwords (no commitear, no guardar en chats con persistencia). Para `supabase db push` necesitás pasarla con `--password`.
+
+### Vercel
+- Project ID: `prj_zSqZxwD6I7j8B6wqWFyzewuFy8PP`.
+- Team: `team_wcxzkbclwcMqtfIWdewqVhDa` (slug `didigitalstudio`).
+- Prod alias: **https://atrio-omega.vercel.app**.
+- Repo conectado: auto-deploy en push a `main`. Preview en cada PR.
+- Env vars seteadas en production / preview / development: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. `NEXT_PUBLIC_MAPBOX_TOKEN` y `RESEND_API_KEY` están vacías hasta que las activemos.
+
+### Variables de entorno
+- `.env.example` versionado con la lista.
+- `.env.local` (gitignored) con los valores reales para dev local. Si lo perdés, regenerar con `vercel env pull --environment=development`.
 
 ---
 
@@ -241,13 +220,193 @@ mockups/           → specs visuales (HTML) — referencia, no código a copiar
 
 1. **Nunca inventes** URLs, keys, IDs de Supabase, slugs, datos. Si no los tenés, pedímelos o usá un mock claramente marcado.
 2. **Los mockups son specs visuales**, no código a copiar. Reimplementar en componentes server/client idiomáticos.
-3. **Toda la UI en español argentino.** "Vos", no "tú". Precios con punto de miles ("USD 165.000"). Pesos con `$` y signo separado del número.
+3. **Toda la UI en español argentino.** "Vos", no "tú". Precios con punto de miles.
 4. **Antes de tareas grandes, mostrar el plan al humano antes de codear.** Después codear pieza por pieza.
 5. **Si algo del mockup parece técnicamente cuestionable, avisá** antes de implementarlo.
 6. **No uses `any`.** Si necesitás escapar, usá `unknown` + narrowing.
 7. **Server-first.** `"use client"` solo cuando hay interactividad real.
 8. **No mezclar Tailwind 3 y 4.** Este proyecto es Tailwind 4 — los tokens van en `@theme`, no en `tailwind.config.ts`.
 9. **Antes de leer/usar APIs de Next**, consultar `node_modules/next/dist/docs/` — Next 16 tiene breaking changes.
+10. **El autor de los commits debe ser `info@didigitalstudio.com`** o un email asociado a la cuenta GitHub `didigitalstudio`. Si no, Vercel rechaza el deploy. El config local del repo ya está seteado, no lo cambies.
+
+---
+
+## ✅ Lo que está hecho
+
+### Setup base e infra
+- Repo, CI, Vercel y Supabase creados, linkeados, con env vars y auto-deploy desde `main`.
+- Schema DB de 6 tablas + triggers + indexes + RLS, aplicado al remoto. Seeds con 3 propiedades, 3 zonas, 1 agente.
+- Stack instalado: Next 16, React 19, TS estricto, Tailwind 4, shadcn base-nova, Manrope, Supabase SSR client, RHF, zod, sonner, lucide, date-fns.
+- Tokens Atrio mapeados sobre shadcn en `app/globals.css` con `@theme inline`.
+- `next.config.ts` con `remotePatterns` para Unsplash y `*.supabase.co`.
+- `.env.example` con las 5 vars necesarias.
+- `lang="es-AR"` en el root layout.
+
+### Componentes
+- `components/shared/nav.tsx` (server) — sticky con backdrop blur, logo Atrio., 6 links públicos, "Iniciar sesión" + "Publicar propiedad" pill.
+- `components/shared/footer.tsx` (server) — brand+contacto, 3 columnas, SEO links, bottom bar con CUCICBA.
+- `components/property/property-card.tsx` (server) — foto 4:3 con shadow-sm, badge operación, meta uppercase, título, address, precio Intl es-AR, features con punto separador, hover translate-y + scale en foto. Esconde "X dorm" cuando dormitorios = 0 (caso monoambiente).
+- `components/property/favorite-button.tsx` (client) — toggle local del corazón. TODO: persistir cuando haya auth + tabla favoritos.
+- `components/property/zones-grid.tsx` (server) — grilla de 5 regiones top-level con foto Unsplash, overlay gradient, count aproximado. Layout 3 cols × 2 rows con primera región doble row.
+- `components/search/hero-search.tsx` (client) — tabs Comprar/Alquilar/Temporario/Emprendimientos, 3 fields con divisores grises sutiles (truco `gap-px` sobre `bg-line`), CTA "Buscar" verde brand. **Submit hace `console.log`** — falta la página `/buscar` que reciba los params.
+- `components/ui/form.tsx` — wrapper RHF clásico (Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage, useFormField).
+- shadcn instalados: button, card, dialog, input, label, select, textarea, table, tabs, sheet, badge, avatar, dropdown-menu, sonner, separator.
+
+### Data layer
+- `lib/types.ts` — type `Propiedad` con zona embebida + enums (`Operacion`, `TipoPropiedad`, `EstadoPropiedad`, `Moneda`, `Foto`, `ZonaResumen`).
+- `lib/supabase/types.ts` — types generados de DB con `supabase gen types`.
+- `lib/supabase/server.ts` — `createClient()` server-side con `@supabase/ssr` y cookies de `next/headers`.
+- `server/queries/properties.ts` — `getFeaturedProperties()` con SELECT real + join `zonas`, filtros `destacada=true` + `estado=activa`, mapper row → Propiedad. **Verificado en el deploy de prod**.
+
+### Home pública (`app/page.tsx`)
+- Hero con eyebrow + display 1 + subtitle + `HeroSearch`.
+- Metrics strip (1.247 propiedades / 23 agentes / 18 años / 94% cierres < 90 días) — números hardcoded por ahora.
+- Sección "Destacadas" con 3 `PropertyCard` desde `getFeaturedProperties()`.
+- Sección "Por zona" con `ZonesGrid`.
+- Sell CTA bg-brand-deep con botones "Solicitar tasación" + "Cómo trabajamos".
+- Trust strip de 3 items (agentes matriculados, respuesta < 2h, info clara).
+
+---
+
+## 🔨 Lo que falta — priorizado
+
+### 🔥 Alta prioridad — pages del nav (hoy todas son 404)
+
+#### `/comprar`, `/alquilar`, `/temporario`, `/emprendimientos`
+
+Listing de propiedades filtrado por `operacion` (y por `tipo='emprendimiento'` para la última).
+
+**Pistas de implementación**:
+- Probablemente conviene un solo template parametrizado: `app/(public)/[operacion]/page.tsx` que recibe `operacion` y filtra. Para `emprendimientos`, una page propia que filtra por tipo.
+- Reusar `PropertyCard` que ya existe.
+- Crear `getProperties({ operacion, tipo, zona, ambientes, precioMin, precioMax, page })` en `server/queries/properties.ts`.
+- Filtros: sidebar a la izquierda (sticky en desktop), inline en mobile. Inputs ya disponibles en `components/ui/`.
+- Paginación: 12 por página. Server-side con `searchParams`.
+- Estado vacío: cuando no hay resultados, mensaje claro + sugerencia de relajar filtros.
+- **No hay mockup específico** — usar el design system del home como base.
+
+#### `/propiedades/[slug]`
+
+Detalle de una propiedad.
+
+**Pistas**:
+- Server query: `getPropertyBySlug(slug)` con join a `zonas` y `agentes`.
+- Galería: instalar carrusel (sugerencia: `embla-carousel-react`).
+- Bloque info: precio destacado, expensas, ambientes, m², features (chips desde `features[]`).
+- Mapa con `ubicacion` (PostGIS POINT) usando Mapbox — token va en `NEXT_PUBLIC_MAPBOX_TOKEN`.
+- Card del agente con WhatsApp clickeable (`https://wa.me/<numero>?text=...`).
+- Form "Consultar por esta propiedad" → server action que hace `INSERT INTO leads` con `propiedad_id`.
+- Si no encuentra slug → `notFound()` de `next/navigation`.
+
+#### `/contacto`
+
+Form general de contacto.
+
+**Pistas**:
+- Form con: nombre, email, teléfono, mensaje. RHF + zod.
+- Server action → `INSERT INTO leads` con `canal='web'`, `propiedad_id=null`.
+- Toast de éxito con sonner.
+- Datos de contacto a la izquierda (los del Footer): dirección, teléfono, email.
+- Mapa opcional con la oficina (Av. Corrientes 1234).
+
+#### `/tasaciones`
+
+Form de solicitud de tasación.
+
+**Pistas**:
+- Form con: nombre, email, teléfono, dirección, tipo, ambientes, m², comentarios. RHF + zod.
+- Server action → `INSERT INTO tasaciones` con `estado='solicitada'`.
+- Toast de éxito + mensaje "Te contactamos en menos de 48h".
+- Hero arriba con texto claro: "Tasación gratuita y sin compromiso".
+
+#### `/nosotros`
+
+Página institucional.
+
+**Pistas**:
+- Texto institucional (ver Footer/Trust del home para tono).
+- Sección "Nuestro equipo" con SELECT a `agentes WHERE activo=true`. Reusar `Avatar` de shadcn.
+- Layout sobrio con secciones grandes y mucho whitespace.
+
+#### `/buscar`
+
+Página de resultados del buscador del hero.
+
+**Pistas**:
+- Recibe `searchParams` (`tab`, `donde`, `tipo`, `precio`).
+- Reusa `getProperties` con esos filters.
+- Misma grilla de PropertyCards.
+- Header con resumen del filtro aplicado: "Propiedades en Caballito · venta · departamentos · hasta USD 200.000".
+- **Conectar el submit del `HeroSearch`** que hoy hace `console.log`. Cambiar a `router.push('/buscar?...')`.
+
+### 🌑 Media prioridad — auth y admin
+
+#### `/login`
+- Login con Supabase Auth (email + password, magic link como alternativa).
+- Después del login → redirect a `/admin`.
+- Middleware con `@supabase/ssr` middleware client para proteger `app/(admin)/`.
+
+#### `/publicar` (cierra cuando hay auth)
+- Form multi-step para que un agente publique propiedad.
+- Step 1: foto principal + info básica (título, dirección, zona, tipo, operación).
+- Step 2: detalles (m², ambientes, dormitorios, baños, antigüedad).
+- Step 3: precio + expensas.
+- Step 4: features (checkboxes) + fotos extra (drag & drop a Supabase Storage).
+- Submit → `INSERT INTO propiedades` con `estado='borrador'`.
+
+#### `app/(admin)/...` — dashboard inmobiliaria
+- Layout protegido (auth check en middleware).
+- Sidebar: Inicio, Propiedades, Leads, Tasaciones, Equipo.
+- CRUD de propiedades.
+- Inbox de leads (kanban por `estado`).
+- Detalle de lead con timeline de `interacciones`.
+
+### 🌱 Baja prioridad — pulidos
+
+- Migrar fotos Unsplash a bucket Supabase Storage propio.
+- Reemplazar counts hardcoded de `ZonesGrid` por counts reales por región (subquery o materialized view).
+- Sitemap dinámico (`app/sitemap.ts`).
+- Open Graph dinámico por propiedad.
+- Botón flotante de WhatsApp en mobile.
+- Búsqueda en mapa con Mapbox.
+- Email transaccional con Resend (notif de nuevo lead al agente, confirm al usuario).
+
+---
+
+## 🧭 Para el próximo dev
+
+### Antes de codear
+1. **Leé los mockups** en `mockups/01-design-system-v2.html` y `mockups/02-home-v2.html` para ver el lenguaje visual.
+2. **Mirá `app/page.tsx`, `components/property/property-card.tsx` y `components/search/hero-search.tsx`** — son ejemplares de cómo se aplica el design system.
+3. **Antes de hacer un form**, leé el wrapper en `components/ui/form.tsx` (tiene un ejemplo de uso al inicio del archivo).
+4. **Antes de tocar APIs de Next**, leé `node_modules/next/dist/docs/` — Next 16 tiene cambios sobre lo que pueda saber un modelo entrenado en Next 14/15.
+5. **Antes de crear una page, mostrale el plan al humano** y esperá OK. Después codeás pieza por pieza.
+
+### Workflow para una nueva página
+1. Crear archivo en `app/(public)/<ruta>/page.tsx` (server component por default).
+2. Si necesita data → query en `server/queries/<entidad>.ts`.
+3. Si necesita mutación → server action en `server/actions/<accion>.ts` con `"use server"`.
+4. Componentes específicos en `components/<dominio>/`.
+5. Validación con un schema zod compartido entre cliente y server.
+6. Antes del commit: `npx tsc --noEmit && npm run lint && npm run build`.
+7. Commit con formato `feat: ...` / `fix: ...` / `chore: ...` / `docs: ...`.
+8. Push a `main` → CI corre + Vercel deploya solo.
+
+### Quirks y gotchas conocidos
+- **Autor del git commit**: tiene que ser `info@didigitalstudio.com` o un email asociado a la cuenta GitHub `didigitalstudio`. Si no, Vercel rechaza el deploy con error vacío. El config local del repo ya está seteado — no lo cambies.
+- **`supabase gen types`** vuelca basura al inicio (`Initialising login role...`) y al final (`A new version of Supabase CLI...`) del archivo generado. Limpiar a mano.
+- **`vercel env add NAME preview --yes` falla** pidiendo git branch positional. Workaround: usar la API REST `POST /v10/projects/{id}/env?teamId=...` con `target: ["preview"]` sin `gitBranch`.
+- **`tailwind.config.ts` no existe** — Tailwind 4 usa `@theme inline` dentro de `app/globals.css`. NO crear `tailwind.config.ts`.
+- **`form` de shadcn** — no está en el registry base-nova. El wrapper está hecho a mano en `components/ui/form.tsx`.
+- **Conexión DB desde CLI** — `supabase db push` necesita `--password`. Si la red no soporta IPv6, asegurate que `supabase link` haya quedado con pooler (re-link con `--password` lo arregla).
+- **`params` y `searchParams` son `Promise`** en pages/layouts de Next 16. Hay que `await` antes de usar.
+
+### Reglas del flujo de trabajo con humano
+- Tareas grandes (página completa, refactor, migration nueva): mostrar **plan** primero, esperar OK, después codear pieza por pieza.
+- Cosas chicas (un fix, un componente aislado): codeá directo y mostrá el diff.
+- Dudas técnicas: **preguntar**, no inventar.
+- Si el mockup tiene algo raro: **avisar**, no copiar el bug.
+- Después de cada commit lógico: sugerir el mensaje antes de hacerlo.
 
 ---
 
@@ -268,7 +427,12 @@ supabase db push --password "<DB_PASSWORD>" --yes        # aplicar migrations al
 supabase gen types typescript --linked > lib/supabase/types.ts
 # ⚠️ El CLI vuelca un "Initialising login role..." al inicio del file
 # generado y un mensaje de "new version available" al final. Borrar
-# esas líneas a mano después de regenerar — ver lib/supabase/types.ts.
+# esas líneas a mano después de regenerar.
+
+# Vercel
+vercel env pull --environment=development        # bajar .env.local
+vercel ls                                        # listar deploys
+vercel deploy --prod --yes                       # deploy manual
 
 # GitHub Actions
 # CI corre automáticamente en push y pull_request a main.
@@ -282,5 +446,8 @@ supabase gen types typescript --linked > lib/supabase/types.ts
 - [ ] `npx tsc --noEmit` pasa sin errores.
 - [ ] `npm run lint` pasa sin warnings nuevos.
 - [ ] `npm run build` compila (correr antes de commits grandes o de tocar config).
-- [ ] Si hay UI nueva o modificada, abrir en `http://localhost:3000` y revisar contra el mockup.
+- [ ] Si hay UI nueva o modificada, abrí http://localhost:3000 y revisá contra el mockup (o contra el design system del home si no hay mockup específico).
 - [ ] Si hay estado del servidor nuevo (DB, env vars), está documentado acá o en `.env.example`.
+- [ ] Si hay nueva migration, está en `supabase/migrations/` con número siguiente y se aplicó al remoto con `supabase db push`.
+- [ ] Si hay nuevos types de DB, regeneraste `lib/supabase/types.ts` y limpiaste la basura del CLI.
+- [ ] Commit message en formato `tipo(scope): descripción` (`feat`, `fix`, `chore`, `docs`).
