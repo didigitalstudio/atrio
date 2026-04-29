@@ -72,8 +72,12 @@ export function PropertyCard({ propiedad }: { propiedad: Propiedad }) {
           </div>
           <div className="flex gap-3.5 text-[13px] text-ink-soft">
             <span>{propiedad.m2_cubiertos ?? "—"} m²</span>
-            <span aria-hidden>·</span>
-            <span>{propiedad.dormitorios} dorm</span>
+            {propiedad.dormitorios > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{propiedad.dormitorios} dorm</span>
+              </>
+            )}
           </div>
         </div>
       </Link>

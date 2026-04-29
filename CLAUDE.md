@@ -91,7 +91,7 @@ Manrope, una sola familia. Jerarquía por **peso**, no por familia.
 - **TypeScript estricto, sin `any`.** Si necesitás escapar el tipo, preferí `unknown` y narrow.
 - **Toda la UI en español argentino. Usar "vos", no "tú".**
 - **`html lang="es-AR"`** en el root layout.
-- **`form` no está en el registry de shadcn base-nova.** Cuando lo necesitemos hay que armar a mano el wrapper RHF (FormField/FormItem/FormControl/FormMessage) — patrón de la doc original de shadcn, adaptado a Base UI.
+- **Wrapper `Form` para RHF + zod en `components/ui/form.tsx`** (no viene en el registry de base-nova; está armado a mano siguiendo el patrón clásico de shadcn). Exports: `Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormDescription`, `FormMessage`, `useFormField`. Uso típico documentado al inicio del archivo.
 
 ### Estructura de carpetas
 
