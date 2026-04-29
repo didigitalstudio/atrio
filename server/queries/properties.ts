@@ -130,6 +130,24 @@ export type PropiedadAdmin = PropiedadRow & {
   zona: { nombre: string; slug: string } | null;
 };
 
+/** Admin: trae una propiedad por id en cualquier estado. */
+export async function getPropertyById(
+  id: string
+): Promise<PropiedadAdmin | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("propiedades")
+    .select("*, zona:zonas(nombre, slug)")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getPropertyById error:", error.message);
+    return null;
+  }
+  return (data as PropiedadAdmin | null) ?? null;
+}
+
 /** Lista para el panel: TODOS los estados, sin paginar (limit 200). */
 export async function getAdminProperties(): Promise<PropiedadAdmin[]> {
   const supabase = await createClient();

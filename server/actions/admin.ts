@@ -3,10 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/types";
 import {
   propiedadSchema,
   type PropiedadInput,
 } from "@/lib/schemas/propiedad";
+import { agenteSchema, type AgenteInput } from "@/lib/schemas/agente";
+
+type PropiedadUpdate = Database["public"]["Tables"]["propiedades"]["Update"];
 
 const ESTADO_LEAD = [
   "nuevo",
@@ -248,5 +252,129 @@ export async function updatePropiedadEstado(
     return { ok: false, error: "No pudimos actualizar la propiedad." };
   }
   revalidatePath("/admin/propiedades");
+  return { ok: true };
+}
+
+// ---------- agentes ----------
+
+export async function createAgente(
+  input: AgenteInput
+): Promise<ActionResult> {
+  const parsed = agenteSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Revisá los datos.",
+    };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("agentes").insert({
+    nombre: parsed.data.nombre,
+    email: parsed.data.email,
+    telefono: parsed.data.telefono || null,
+    whatsapp: parsed.data.whatsapp || null,
+    matricula: parsed.data.matricula || null,
+    foto_url: parsed.data.fotoUrl || null,
+    bio: parsed.data.bio || null,
+    activo: true,
+  });
+
+  if (error) {
+    console.error("createAgente insert error:", error.message);
+    return { ok: false, error: "No pudimos crear el agente." };
+  }
+  revalidatePath("/admin/equipo");
+  return { ok: true };
+}
+
+const toggleActivoSchema = z.object({
+  id: z.string().uuid(),
+  activo: z.enum(["true", "false"]),
+});
+
+export async function toggleAgenteActivo(
+  formData: FormData
+): Promise<ActionResult> {
+  const parsed = toggleActivoSchema.safeParse({
+    id: formData.get("id"),
+    activo: formData.get("activo"),
+  });
+  if (!parsed.success) return { ok: false, error: "Datos inválidos." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("agentes")
+    .update({ activo: parsed.data.activo === "true" })
+    .eq("id", parsed.data.id);
+
+  if (error) {
+    console.error("toggleAgenteActivo error:", error.message);
+    return { ok: false, error: "No pudimos actualizar el agente." };
+  }
+  revalidatePath("/admin/equipo");
+  return { ok: true };
+}
+
+// ---------- propiedades: full update (edit page) ----------
+
+export async function updatePropiedad(
+  id: string,
+  input: PropiedadInput
+): Promise<ActionResult> {
+  const parsed = propiedadSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Revisá los datos.",
+    };
+  }
+  const supabase = await createClient();
+
+  const features = (parsed.data.features ?? "")
+    .split(",")
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  const intOrNull = (v?: string) =>
+    v && /^\d+$/.test(v) ? parseInt(v, 10) : null;
+
+  // Conserva foto principal si está vacía no la cambia; si tiene URL nueva, reemplaza
+  const updates: PropiedadUpdate = {
+    titulo: parsed.data.titulo,
+    descripcion: parsed.data.descripcion ?? null,
+    tipo: parsed.data.tipo,
+    operacion: parsed.data.operacion,
+    direccion: parsed.data.direccion,
+    zona_id: parsed.data.zonaId,
+    ambientes: parseInt(parsed.data.ambientes, 10),
+    dormitorios: intOrNull(parsed.data.dormitorios) ?? 0,
+    banos: intOrNull(parsed.data.banos) ?? 0,
+    m2_cubiertos: intOrNull(parsed.data.m2Cubiertos),
+    m2_totales: intOrNull(parsed.data.m2Totales),
+    antiguedad: intOrNull(parsed.data.antiguedad),
+    precio: parseInt(parsed.data.precio, 10),
+    moneda: parsed.data.moneda,
+    expensas: intOrNull(parsed.data.expensas),
+    expensas_moneda: parsed.data.expensasMoneda ?? null,
+    apto_credito: parsed.data.aptoCredito ?? false,
+    features: features as unknown as never,
+  };
+  if (parsed.data.fotoUrl) {
+    updates.fotos = [
+      { url: parsed.data.fotoUrl, alt: parsed.data.titulo, orden: 0 },
+    ] as unknown as never;
+  }
+
+  const { error } = await supabase
+    .from("propiedades")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) {
+    console.error("updatePropiedad error:", error.message);
+    return { ok: false, error: "No pudimos actualizar la propiedad." };
+  }
+  revalidatePath("/admin/propiedades");
+  revalidatePath(`/admin/propiedades/${id}/edit`);
   return { ok: true };
 }

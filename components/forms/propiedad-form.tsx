@@ -24,7 +24,7 @@ import {
   type PropiedadInput,
 } from "@/lib/schemas/propiedad";
 import type { ZonaResumen } from "@/lib/types";
-import { createPropiedad } from "@/server/actions/admin";
+import { createPropiedad, updatePropiedad } from "@/server/actions/admin";
 
 const TIPO_LABEL: Record<(typeof TIPOS_PROPIEDAD)[number], string> = {
   departamento: "Departamento",
@@ -47,9 +47,17 @@ const inputCls = "h-11 rounded-[10px] px-3 text-sm";
 const selectCls =
   "h-11 w-full rounded-[10px] border border-line bg-white px-3 text-sm text-ink outline-none transition-colors hover:border-ink-faint focus:border-brand focus:ring-2 focus:ring-brand/15";
 
-export function PropiedadForm({ zonas }: { zonas: ZonaResumen[] }) {
+type Props = {
+  zonas: ZonaResumen[];
+  /** Si está presente, el form pasa a modo edición. */
+  propiedadId?: string;
+  initialValues?: Partial<PropiedadInput>;
+};
+
+export function PropiedadForm({ zonas, propiedadId, initialValues }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const isEdit = Boolean(propiedadId);
 
   const form = useForm<PropiedadInput>({
     resolver: zodResolver(propiedadSchema),
@@ -73,20 +81,30 @@ export function PropiedadForm({ zonas }: { zonas: ZonaResumen[] }) {
       aptoCredito: false,
       features: "",
       fotoUrl: "",
+      ...initialValues,
     },
   });
 
   const onSubmit = (values: PropiedadInput) => {
     startTransition(async () => {
-      const result = await createPropiedad(values);
+      const result = isEdit
+        ? await updatePropiedad(propiedadId!, values)
+        : await createPropiedad(values);
+
       if (result.ok) {
-        toast.success("Propiedad creada", {
-          description: "Está en estado borrador. Pasala a activa cuando esté lista.",
+        toast.success(isEdit ? "Cambios guardados" : "Propiedad creada", {
+          description: isEdit
+            ? "Listo. Los cambios ya están publicados."
+            : "Está en estado borrador. Pasala a activa cuando esté lista.",
         });
-        router.push("/admin/propiedades");
-        router.refresh();
+        if (!isEdit) {
+          router.push("/admin/propiedades");
+          router.refresh();
+        } else {
+          router.refresh();
+        }
       } else {
-        toast.error("No pudimos crear la propiedad", {
+        toast.error(isEdit ? "No pudimos guardar los cambios" : "No pudimos crear la propiedad", {
           description: result.error,
         });
       }
@@ -443,14 +461,18 @@ export function PropiedadForm({ zonas }: { zonas: ZonaResumen[] }) {
 
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
           <p className="text-xs text-ink-muted">
-            Se guarda como <strong className="font-semibold">borrador</strong>. La activás desde el panel cuando esté lista.
+            {isEdit
+              ? "Los cambios se guardan al instante."
+              : "Se guarda como "}
+            {!isEdit && <strong className="font-semibold">borrador</strong>}
+            {!isEdit && ". La activás desde el panel cuando esté lista."}
           </p>
           <button
             type="submit"
             disabled={pending}
             className="h-11 rounded-full bg-brand px-7 text-sm font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {pending ? "Guardando…" : "Crear propiedad"}
+            {pending ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear propiedad"}
           </button>
         </div>
       </form>

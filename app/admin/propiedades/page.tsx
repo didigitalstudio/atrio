@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink, Pencil, Plus } from "lucide-react";
 import { InlineStatusForm } from "@/components/admin/inline-status-form";
 import { getAdminProperties } from "@/server/queries/properties";
 import { updatePropiedadEstado } from "@/server/actions/admin";
@@ -105,19 +105,26 @@ export default async function AdminPropiedadesPage() {
                       options={ESTADO_OPTIONS}
                     />
                   </td>
-                  <td className="px-5 py-3 text-right">
-                    {p.estado === "activa" || p.estado === "reservada" ? (
+                  <td className="px-5 py-3 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-3 text-xs font-semibold">
                       <Link
-                        href={`/propiedades/${p.slug}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-deep hover:underline"
+                        href={`/admin/propiedades/${p.id}/edit`}
+                        className="inline-flex items-center gap-1 text-ink-soft hover:text-ink"
                       >
-                        Ver
-                        <ExternalLink className="h-3 w-3" />
+                        <Pencil className="h-3 w-3" />
+                        Editar
                       </Link>
-                    ) : (
-                      <span className="text-xs text-ink-faint">—</span>
-                    )}
+                      {(p.estado === "activa" || p.estado === "reservada") && (
+                        <Link
+                          href={`/propiedades/${p.slug}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-brand-deep hover:underline"
+                        >
+                          Ver
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

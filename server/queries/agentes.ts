@@ -28,6 +28,24 @@ export async function getAgentes(): Promise<AgenteResumen[]> {
   return data ?? [];
 }
 
+export type AgenteAdminRow = Database["public"]["Tables"]["agentes"]["Row"];
+
+/** Admin: trae todos los agentes (activos e inactivos). */
+export async function getAllAgentes(): Promise<AgenteAdminRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("agentes")
+    .select("*")
+    .order("activo", { ascending: false })
+    .order("nombre", { ascending: true });
+
+  if (error) {
+    console.error("getAllAgentes error:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getAgenteById(
   id: string
 ): Promise<AgenteResumen | null> {
