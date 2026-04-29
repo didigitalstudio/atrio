@@ -414,11 +414,11 @@ Todas las tablas tienen: PK `uuid default gen_random_uuid()`, `created_at`/`upda
 ### Estado actual de Resend (al 2026-04-29)
 
 - **API key cargada** en Vercel (Production + Development) y en `.env.local`. Preview todavía no — quirk del CLI con `vercel env add NAME preview`.
-- **Dominio `didigitalstudio.com` verificado en Resend** (region `sa-east-1`). DNS records SPF + DKIM + return-path MX están en Vercel DNS (los nameservers del dominio son de Vercel, así que se gestionan vía `vercel dns`). Domain ID Resend: `e282c9ec-765d-448c-951d-4e8dec4c207b`.
-- **`RESEND_FROM="Atrio <noreply@didigitalstudio.com>"`** seteado en Vercel + `.env.local`. Los mails ya salen autenticados (DKIM + SPF) desde un sender verificado.
+- **Cuenta Resend**: rotada a una nueva bajo `info@didigitalstudio.com`. La key actual (`RESEND_API_KEY` en Vercel + `.env.local`) es restricted "send only" — no permite gestionar dominios via API.
+- **Dominio `didigitalstudio.com` PENDIENTE de re-verificar** en la cuenta nueva. El DKIM viejo se borró de Vercel DNS y el nuevo (que pasó el user) ya está cargado (`rec_ba3517338f4f3770a73e0c96`). Los records SPF MX + SPF TXT en `send.didigitalstudio.com` no cambiaron (apuntan a `feedback-smtp.sa-east-1.amazonses.com` / `v=spf1 include:amazonses.com ~all`). Falta que alguien entre a Resend → Domains → click "Verify" cuando se retome el tema. Hasta entonces, los `notify*` desde producción tiran 403 y se loguean (no rompen las acciones).
+- **`RESEND_FROM="Atrio <noreply@didigitalstudio.com>"`** seteado en Vercel + `.env.local`. Funciona apenas el dominio quede verificado en la cuenta nueva.
 - **`NOTIFICATIONS_EMAIL=info@didigitalstudio.com`** — mail del equipo Atrio donde caen los avisos cuando no hay agente asignado.
-- **Sandbox liberado**: con dominio verificado, los mails se entregan a cualquier destinatario. Test real enviado y confirmado a `info@didigitalstudio.com` (ID `abd7c620-25eb-4cf0-b699-108072c49c0e`).
-- **Pendiente** (manual desde dashboard): activar Supabase Auth Custom SMTP con Resend para que los mails de verificación de signup salgan también desde `noreply@didigitalstudio.com` en lugar del relay limitado de Supabase.
+- **Pendiente** (cuando se retome): (1) verificar dominio en cuenta nueva (1 click); (2) configurar Supabase Auth Custom SMTP con Resend (Supabase Dashboard → Auth → SMTP, host `smtp.resend.com`, port `465`, user `resend`, pass = la key, sender = `noreply@didigitalstudio.com`).
 
 ### Para activar Resend (steps manuales que NO podés hacer desde código)
 
