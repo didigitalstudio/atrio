@@ -118,7 +118,7 @@ async function uniqueSlug(base: string): Promise<string> {
 }
 
 export type CreatePropiedadResult =
-  | { ok: true; slug: string }
+  | { ok: true; slug: string; pendingReview: boolean }
   | { ok: false; error: string };
 
 export async function createPropiedad(
@@ -134,43 +134,31 @@ export async function createPropiedad(
 
   const supabase = await createClient();
 
+  // ¿Quién está creando esto? Si es agente activo → publicación interna
+  // (estado='borrador'). Si es cliente sin agente → submission a revisar
+  // (estado='en_revision', agente_id=null, submitted_by=user.id).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "Tenés que iniciar sesión." };
+  }
+
+  const { data: agente } = await supabase
+    .from("agentes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("activo", true)
+    .maybeSingle();
+
+  const isAgentSubmission = !!agente;
+
   // Trae el barrio para el slug
   const { data: zona } = await supabase
     .from("zonas")
     .select("slug")
     .eq("id", parsed.data.zonaId)
     .maybeSingle();
-
-  // Resolver agente_id: por ahora, el primer agente activo (TODO: linkear por user_id).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  let agenteId: string | null = null;
-  if (user) {
-    const { data: byUser } = await supabase
-      .from("agentes")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("activo", true)
-      .maybeSingle();
-    agenteId = byUser?.id ?? null;
-  }
-  if (!agenteId) {
-    const { data: fallback } = await supabase
-      .from("agentes")
-      .select("id")
-      .eq("activo", true)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    agenteId = fallback?.id ?? null;
-  }
-  if (!agenteId) {
-    return {
-      ok: false,
-      error: "No hay agentes activos cargados. Cargá uno antes de publicar.",
-    };
-  }
 
   const baseSlug = slugify(`${parsed.data.titulo}-${zona?.slug ?? ""}`);
   const slug = await uniqueSlug(baseSlug || `propiedad-${Date.now()}`);
@@ -193,10 +181,11 @@ export async function createPropiedad(
     descripcion: parsed.data.descripcion ?? null,
     tipo: parsed.data.tipo,
     operacion: parsed.data.operacion,
-    estado: "borrador",
+    estado: isAgentSubmission ? "borrador" : "en_revision",
     direccion: parsed.data.direccion,
     zona_id: parsed.data.zonaId,
-    agente_id: agenteId,
+    agente_id: isAgentSubmission ? agente!.id : null,
+    submitted_by: user.id,
     ambientes: parseInt(parsed.data.ambientes, 10),
     dormitorios: intOrNull(parsed.data.dormitorios) ?? 0,
     banos: intOrNull(parsed.data.banos) ?? 0,
@@ -218,7 +207,7 @@ export async function createPropiedad(
   }
 
   revalidatePath("/admin/propiedades");
-  return { ok: true, slug };
+  return { ok: true, slug, pendingReview: !isAgentSubmission };
 }
 
 const updatePropiedadEstadoSchema = z.object({
@@ -312,6 +301,72 @@ export async function toggleAgenteActivo(
     return { ok: false, error: "No pudimos actualizar el agente." };
   }
   revalidatePath("/admin/equipo");
+  return { ok: true };
+}
+
+// ---------- review queue (client submissions) ----------
+
+const reviewIdSchema = z.object({ id: z.string().uuid() });
+
+/** Aprueba una submission: estado=activa + asigna agente al admin actual. */
+export async function approvePropiedad(
+  formData: FormData
+): Promise<ActionResult> {
+  const parsed = reviewIdSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return { ok: false, error: "Id inválido." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Iniciá sesión primero." };
+
+  const { data: agente } = await supabase
+    .from("agentes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("activo", true)
+    .maybeSingle();
+  if (!agente) {
+    return {
+      ok: false,
+      error: "Solo agentes activos pueden aprobar propiedades.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("propiedades")
+    .update({ estado: "activa", agente_id: agente.id })
+    .eq("id", parsed.data.id);
+
+  if (error) {
+    console.error("approvePropiedad error:", error.message);
+    return { ok: false, error: "No pudimos aprobar la propiedad." };
+  }
+  revalidatePath("/admin/propiedades");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/** Rechaza una submission: estado=despublicada (recuperable después). */
+export async function rejectPropiedad(
+  formData: FormData
+): Promise<ActionResult> {
+  const parsed = reviewIdSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return { ok: false, error: "Id inválido." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("propiedades")
+    .update({ estado: "despublicada" })
+    .eq("id", parsed.data.id);
+
+  if (error) {
+    console.error("rejectPropiedad error:", error.message);
+    return { ok: false, error: "No pudimos rechazar la propiedad." };
+  }
+  revalidatePath("/admin/propiedades");
+  revalidatePath("/admin");
   return { ok: true };
 }
 

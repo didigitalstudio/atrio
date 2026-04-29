@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Building2,
+  ClipboardCheck,
   Inbox,
   Plus,
   Ruler,
@@ -19,6 +20,7 @@ async function fetchCounts() {
   const [
     activas,
     borrador,
+    enRevision,
     destacadas,
     leadsNuevos,
     leadsTotal,
@@ -34,6 +36,10 @@ async function fetchCounts() {
       .from("propiedades")
       .select("id", { count: "exact", head: true })
       .eq("estado", "borrador"),
+    supabase
+      .from("propiedades")
+      .select("id", { count: "exact", head: true })
+      .eq("estado", "en_revision"),
     supabase
       .from("propiedades")
       .select("id", { count: "exact", head: true })
@@ -58,6 +64,7 @@ async function fetchCounts() {
   return {
     activas: activas.count ?? 0,
     borrador: borrador.count ?? 0,
+    enRevision: enRevision.count ?? 0,
     destacadas: destacadas.count ?? 0,
     leadsNuevos: leadsNuevos.count ?? 0,
     leadsTotal: leadsTotal.count ?? 0,
@@ -90,6 +97,14 @@ export default async function AdminHomePage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card
+          icon={ClipboardCheck}
+          label="Submissions a revisar"
+          value={c.enRevision}
+          hint="De clientes que cargaron su propiedad"
+          href="/admin/propiedades?estado=en_revision"
+          highlight={c.enRevision > 0}
+        />
+        <Card
           icon={Inbox}
           label="Leads sin atender"
           value={c.leadsNuevos}
@@ -112,15 +127,15 @@ export default async function AdminHomePage() {
           hint={`${c.borrador} en borrador`}
           href="/admin/propiedades"
         />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card
           icon={Sparkles}
           label="Destacadas en home"
           value={c.destacadas}
           href="/admin/propiedades"
         />
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card
           icon={Users}
           label="Agentes activos"

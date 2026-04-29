@@ -81,18 +81,22 @@ export default function VenderPage() {
         </p>
         <div className="mt-10 flex flex-wrap gap-4">
           <Link
-            href="/tasaciones"
+            href="/publicar"
             className="rounded-full bg-brand px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-deep hover:shadow-md"
+          >
+            Publicar mi propiedad
+          </Link>
+          <Link
+            href="/tasaciones"
+            className="rounded-full border-[1.5px] border-line bg-white px-7 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-ink"
           >
             Pedir tasación gratis
           </Link>
-          <Link
-            href="/contacto"
-            className="rounded-full border-[1.5px] border-line bg-white px-7 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-ink"
-          >
-            Quiero hablar con alguien
-          </Link>
         </div>
+        <p className="mt-4 text-xs text-ink-muted">
+          Para publicar te pedimos crear una cuenta. Tu propiedad va a revisión
+          antes de salir online.
+        </p>
       </section>
 
       {/* STATS */}
@@ -180,24 +184,24 @@ export default function VenderPage() {
             Empezá hoy
           </div>
           <h2 className="mb-6 max-w-[720px] text-4xl font-light leading-tight tracking-tight md:text-5xl">
-            Pedí tu <strong className="font-semibold">tasación gratis</strong> y vemos juntos cuánto vale.
+            Cargá tu propiedad <strong className="font-semibold">en 5 minutos.</strong>
           </h2>
           <p className="mb-8 max-w-[480px] text-base leading-relaxed text-white/75">
-            Te respondemos en menos de 48 horas con un valor real, basado en
-            operaciones recientes del barrio. Sin compromiso de venta.
+            Creás tu cuenta, completás los datos y nuestro equipo la revisa.
+            Si hace falta ajustar algo, te avisamos antes de publicar.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
-              href="/tasaciones"
+              href="/publicar"
               className="rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-ink shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
-              Solicitar tasación
+              Publicar mi propiedad
             </Link>
             <Link
-              href="/contacto"
+              href="/tasaciones"
               className="rounded-full border-[1.5px] border-white/30 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white/5"
             >
-              Hablar con alguien
+              Solo quiero tasación
             </Link>
           </div>
         </div>

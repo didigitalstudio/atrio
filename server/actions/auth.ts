@@ -2,14 +2,19 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { loginSchema, type LoginInput } from "@/lib/schemas/auth";
+import {
+  loginSchema,
+  signUpSchema,
+  type LoginInput,
+  type SignUpInput,
+} from "@/lib/schemas/auth";
 
-export type SignInResult = { ok: true } | { ok: false; error: string };
+export type AuthResult = { ok: true } | { ok: false; error: string };
 
 export async function signIn(
   input: LoginInput,
   next?: string
-): Promise<SignInResult> {
+): Promise<AuthResult> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -19,16 +24,54 @@ export async function signIn(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
 
-  if (error) {
+  if (error || !data.user) {
     return { ok: false, error: "Email o contraseña incorrectos." };
   }
 
-  redirect(safeNext(next));
+  redirect(await safeNext(next, data.user.id));
+}
+
+export async function signUp(
+  input: SignUpInput,
+  next?: string
+): Promise<AuthResult> {
+  const parsed = signUpSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Revisá los datos.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    options: {
+      data: { nombre: parsed.data.nombre },
+    },
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes("already")
+        ? "Ya existe una cuenta con ese email."
+        : "No pudimos crear la cuenta. Probá de nuevo.",
+    };
+  }
+
+  // Si email confirmation está activado, no hay sesión todavía → mandalo a /login
+  if (!data.session) {
+    redirect(`/login?signup=ok${next ? `&next=${encodeURIComponent(next)}` : ""}`);
+  }
+
+  redirect(await safeNext(next, data.user?.id));
 }
 
 export async function signOut(): Promise<void> {
@@ -37,7 +80,22 @@ export async function signOut(): Promise<void> {
   redirect("/login");
 }
 
-function safeNext(next: string | undefined): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/admin";
-  return next;
+async function safeNext(
+  next: string | undefined,
+  userId: string | undefined
+): Promise<string> {
+  // next explícito gana, salvo que sea raro
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  // Default: si es agente → /admin; si es cliente → /publicar
+  if (userId) {
+    const supabase = await createClient();
+    const { data: agente } = await supabase
+      .from("agentes")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("activo", true)
+      .maybeSingle();
+    return agente ? "/admin" : "/publicar";
+  }
+  return "/admin";
 }

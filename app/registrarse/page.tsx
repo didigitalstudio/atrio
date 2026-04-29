@@ -1,53 +1,47 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LoginForm } from "@/components/forms/login-form";
+import { SignUpForm } from "@/components/forms/signup-form";
 import type { RawSearchParams } from "@/lib/search-params";
 
 export const metadata: Metadata = {
-  title: "Iniciar sesión · Atrio",
-  description: "Acceso al panel para inmobiliarias y agentes de Atrio.",
+  title: "Crear cuenta · Atrio",
+  description:
+    "Creá tu cuenta para publicar tu propiedad o seguir el estado de una operación.",
 };
 
-export default async function LoginPage({
+export default async function RegistrarsePage({
   searchParams,
 }: {
   searchParams: Promise<RawSearchParams>;
 }) {
   const sp = await searchParams;
   const next = typeof sp.next === "string" ? sp.next : undefined;
-  const justSignedUp = sp.signup === "ok";
 
   return (
     <section className="mx-auto flex min-h-[70vh] max-w-[480px] flex-col justify-center px-6 py-16 md:px-10">
       <div className="mb-10 text-center">
         <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-          Acceso
+          Cuenta nueva
         </div>
         <h1 className="text-3xl font-light leading-tight tracking-tight md:text-4xl">
-          Iniciar <strong className="font-semibold">sesión.</strong>
+          Creá tu <strong className="font-semibold">cuenta.</strong>
         </h1>
         <p className="mt-3 text-sm text-ink-muted">
-          Para clientes que publican y para agentes de Atrio.
+          Vas a poder publicar tu propiedad y seguir el estado de la operación.
         </p>
       </div>
 
-      {justSignedUp && (
-        <div className="mb-5 rounded-xl border border-brand/20 bg-brand-faint px-4 py-3 text-center text-sm text-brand-deep">
-          Cuenta creada. Confirmá tu email si te llegó un mail, después iniciá sesión.
-        </div>
-      )}
-
       <div className="rounded-2xl border border-line bg-white p-8">
-        <LoginForm next={next} />
+        <SignUpForm next={next} />
       </div>
 
       <p className="mt-6 text-center text-xs text-ink-muted">
-        ¿Todavía no tenés cuenta?{" "}
+        ¿Ya tenés cuenta?{" "}
         <Link
-          href={`/registrarse${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+          href={`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`}
           className="font-semibold text-brand-deep hover:underline"
         >
-          Crear cuenta
+          Iniciar sesión
         </Link>
         .
       </p>

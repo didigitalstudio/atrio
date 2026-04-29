@@ -1,6 +1,3 @@
-// Generado por `supabase gen types typescript --linked`. No editar a mano.
-// Re-generar después de cada migration que cambie el schema.
-
 export type Json =
   | string
   | number
@@ -189,7 +186,7 @@ export type Database = {
       propiedades: {
         Row: {
           abl_incluido: boolean
-          agente_id: string
+          agente_id: string | null
           ambientes: number | null
           antiguedad: number | null
           apto_credito: boolean
@@ -212,6 +209,7 @@ export type Database = {
           operacion: Database["public"]["Enums"]["operacion"]
           precio: number
           slug: string
+          submitted_by: string | null
           tipo: Database["public"]["Enums"]["tipo_propiedad"]
           titulo: string
           ubicacion: unknown
@@ -220,7 +218,7 @@ export type Database = {
         }
         Insert: {
           abl_incluido?: boolean
-          agente_id: string
+          agente_id?: string | null
           ambientes?: number | null
           antiguedad?: number | null
           apto_credito?: boolean
@@ -243,6 +241,7 @@ export type Database = {
           operacion: Database["public"]["Enums"]["operacion"]
           precio: number
           slug: string
+          submitted_by?: string | null
           tipo: Database["public"]["Enums"]["tipo_propiedad"]
           titulo: string
           ubicacion?: unknown
@@ -251,7 +250,7 @@ export type Database = {
         }
         Update: {
           abl_incluido?: boolean
-          agente_id?: string
+          agente_id?: string | null
           ambientes?: number | null
           antiguedad?: number | null
           apto_credito?: boolean
@@ -274,6 +273,7 @@ export type Database = {
           operacion?: Database["public"]["Enums"]["operacion"]
           precio?: number
           slug?: string
+          submitted_by?: string | null
           tipo?: Database["public"]["Enums"]["tipo_propiedad"]
           titulo?: string
           ubicacion?: unknown
@@ -406,6 +406,7 @@ export type Database = {
         | "convertido"
       estado_propiedad:
         | "borrador"
+        | "en_revision"
         | "activa"
         | "reservada"
         | "cerrada"
@@ -577,6 +578,7 @@ export const Constants = {
       ],
       estado_propiedad: [
         "borrador",
+        "en_revision",
         "activa",
         "reservada",
         "cerrada",

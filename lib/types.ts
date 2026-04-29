@@ -18,6 +18,7 @@ export type TipoPropiedad =
 
 export type EstadoPropiedad =
   | "borrador"
+  | "en_revision"
   | "activa"
   | "reservada"
   | "cerrada"
@@ -63,7 +64,7 @@ export type Propiedad = {
   destacada: boolean;
   features: string[];
   fotos: Foto[];
-  agente_id: string;
+  agente_id: string | null;
   created_at: string;
   updated_at: string;
 };

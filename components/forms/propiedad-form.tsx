@@ -91,22 +91,33 @@ export function PropiedadForm({ zonas, propiedadId, initialValues }: Props) {
         ? await updatePropiedad(propiedadId!, values)
         : await createPropiedad(values);
 
-      if (result.ok) {
-        toast.success(isEdit ? "Cambios guardados" : "Propiedad creada", {
-          description: isEdit
-            ? "Listo. Los cambios ya están publicados."
-            : "Está en estado borrador. Pasala a activa cuando esté lista.",
+      if (!result.ok) {
+        toast.error(
+          isEdit ? "No pudimos guardar los cambios" : "No pudimos crear la propiedad",
+          { description: result.error }
+        );
+        return;
+      }
+
+      if (isEdit) {
+        toast.success("Cambios guardados", {
+          description: "Listo. Los cambios ya están publicados.",
         });
-        if (!isEdit) {
-          router.push("/admin/propiedades");
-          router.refresh();
-        } else {
-          router.refresh();
-        }
+        router.refresh();
+        return;
+      }
+
+      // result viene de createPropiedad: trae pendingReview.
+      if ("pendingReview" in result && result.pendingReview) {
+        // Submission de cliente → pasa a revisión.
+        router.push("/publicar/gracias");
+        router.refresh();
       } else {
-        toast.error(isEdit ? "No pudimos guardar los cambios" : "No pudimos crear la propiedad", {
-          description: result.error,
+        toast.success("Propiedad creada", {
+          description: "Está en estado borrador. Pasala a activa cuando esté lista.",
         });
+        router.push("/admin/propiedades");
+        router.refresh();
       }
     });
   };

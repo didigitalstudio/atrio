@@ -15,6 +15,15 @@ export default async function AdminLayout({
   // El middleware ya redirige, pero protegemos a nivel layout también.
   if (!user) redirect("/login?next=/admin");
 
+  // Solo los agentes activos ven el panel. Clientes van a /publicar.
+  const { data: agente } = await supabase
+    .from("agentes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("activo", true)
+    .maybeSingle();
+  if (!agente) redirect("/publicar");
+
   return (
     <div className="grid min-h-full md:grid-cols-[260px_1fr]">
       <AdminSidebar userEmail={user.email ?? null} />
