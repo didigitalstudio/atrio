@@ -66,6 +66,14 @@ export async function signUp(
     };
   }
 
+  // Supabase no devuelve error cuando el email ya existe (para no leakear
+  // qué cuentas hay registradas). En ese caso, data.user.identities llega
+  // vacío. Lo detectamos para mostrar el mensaje correcto en lugar del
+  // banner "te mandamos un mail" que confunde al usuario.
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return { ok: false, error: "Ya existe una cuenta con ese email." };
+  }
+
   // Si email confirmation está activado, no hay sesión todavía → mandalo a /login
   if (!data.session) {
     redirect(`/login?signup=ok${next ? `&next=${encodeURIComponent(next)}` : ""}`);
