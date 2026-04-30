@@ -12,6 +12,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import { ContactForm } from "@/components/forms/contact-form";
+import { formatFeature, isPerkFeature, PERK_FEATURES } from "@/lib/features";
 import type { Propiedad } from "@/lib/types";
 import { getAgenteById } from "@/server/queries/agentes";
 import { getPropertyBySlug } from "@/server/queries/properties";
@@ -94,6 +95,15 @@ export default async function PropiedadPage({ params }: { params: Params }) {
   const price = formatPrice(propiedad);
   const fotos = propiedad.fotos.length > 0 ? propiedad.fotos : [];
   const wa = agente ? whatsappHref(agente.whatsapp ?? agente.telefono, propiedad) : null;
+
+  // Badges destacados: apto crédito (columna) + perks que vengan en features.
+  const perks: string[] = [];
+  if (propiedad.apto_credito) perks.push("apto_credito");
+  for (const k of PERK_FEATURES) {
+    if (propiedad.features.includes(k)) perks.push(k);
+  }
+  // Resto de features (excluye los que ya mostramos como perks).
+  const restFeatures = propiedad.features.filter((f) => !isPerkFeature(f));
 
   return (
     <>
@@ -201,20 +211,35 @@ export default async function PropiedadPage({ params }: { params: Params }) {
               </div>
             )}
 
+            {/* PERKS DESTACADOS */}
+            {perks.length > 0 && (
+              <div className="mt-10 flex flex-wrap gap-2">
+                {perks.map((p) => (
+                  <span
+                    key={p}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand-soft px-3.5 py-1.5 text-[13px] font-semibold text-brand-deep"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {p === "apto_credito" ? "Apto crédito" : formatFeature(p)}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* FEATURES */}
-            {propiedad.features.length > 0 && (
+            {restFeatures.length > 0 && (
               <div className="mt-12">
                 <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-                  Características
+                  Características y amenities
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {propiedad.features.map((f) => (
+                  {restFeatures.map((f) => (
                     <span
                       key={f}
                       className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-[13px] text-ink-soft"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-brand" />
-                      {f}
+                      {formatFeature(f)}
                     </span>
                   ))}
                 </div>
