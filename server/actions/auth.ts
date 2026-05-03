@@ -2,12 +2,18 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import {
   loginSchema,
   signUpSchema,
   type LoginInput,
   type SignUpInput,
 } from "@/lib/schemas/auth";
+
+function slugify(s: string) {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 48);
+}
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
@@ -66,12 +72,59 @@ export async function signUp(
     };
   }
 
+  const userId = data.user?.id;
+
+  if (parsed.data.esInmobiliaria && parsed.data.nombreInmobiliaria && userId) {
+    const inmoNombre = parsed.data.nombreInmobiliaria.trim();
+    const slug = `${slugify(inmoNombre)}-${Math.random().toString(36).slice(2, 6)}`;
+    const svc = createServiceClient();
+
+    const { data: inmoRow } = await svc
+      .from("inmobiliarias")
+      .insert({ nombre: inmoNombre, slug, email_contacto: parsed.data.email, aprobada: false })
+      .select("id")
+      .single();
+
+    if (inmoRow) {
+      await svc.from("agentes").insert({
+        user_id: userId,
+        inmobiliaria_id: inmoRow.id,
+        nombre: parsed.data.nombre,
+        email: parsed.data.email,
+        activo: false,
+      });
+
+      const webhookUrl = process.env.DI_ADMIN_WEBHOOK_URL;
+      const webhookSecret = process.env.DI_ADMIN_WEBHOOK_SECRET;
+      if (webhookUrl && webhookSecret) {
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${webhookSecret}` },
+          body: JSON.stringify({
+            proyecto: "atrio",
+            entity_type: "inmobiliaria",
+            entity_id: inmoRow.id,
+            auth_user_id: userId,
+            email: parsed.data.email,
+            nombre: parsed.data.nombre,
+            datos_extra: { inmo_nombre: inmoNombre },
+          }),
+        }).catch(() => {});
+      }
+    }
+
+    if (!data.session) {
+      redirect(`/login?signup=ok`);
+    }
+    redirect("/admin");
+  }
+
   // Si email confirmation está activado, no hay sesión todavía → mandalo a /login
   if (!data.session) {
     redirect(`/login?signup=ok${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   }
 
-  redirect(await safeNext(next, data.user?.id));
+  redirect(await safeNext(next, userId));
 }
 
 export async function signOut(): Promise<void> {

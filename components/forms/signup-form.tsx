@@ -28,8 +28,12 @@ export function SignUpForm({ next }: { next?: string }) {
       email: "",
       password: "",
       passwordConfirm: "",
+      esInmobiliaria: false,
+      nombreInmobiliaria: "",
     },
   });
+
+  const esInmobiliaria = form.watch("esInmobiliaria");
 
   const onSubmit = (values: SignUpInput) => {
     startTransition(async () => {
@@ -128,6 +132,48 @@ export function SignUpForm({ next }: { next?: string }) {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="esInmobiliaria"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="esInmobiliaria"
+                  checked={field.value ?? false}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 accent-brand"
+                />
+                <label htmlFor="esInmobiliaria" className="text-sm font-medium leading-none">
+                  Soy una inmobiliaria que quiere usar Atrio
+                </label>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {esInmobiliaria && (
+          <FormField
+            control={form.control}
+            name="nombreInmobiliaria"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre de la inmobiliaria</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Ej: Inmobiliaria García"
+                    className={inputCls}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <button
           type="submit"

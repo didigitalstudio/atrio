@@ -13,10 +13,16 @@ export const signUpSchema = z
     email: z.string().email("Necesitamos un email válido."),
     password: z.string().min(8, "Mínimo 8 caracteres."),
     passwordConfirm: z.string(),
+    esInmobiliaria: z.boolean().optional(),
+    nombreInmobiliaria: z.string().max(120).optional(),
   })
   .refine((d) => d.password === d.passwordConfirm, {
     message: "Las contraseñas no coinciden.",
     path: ["passwordConfirm"],
+  })
+  .refine((d) => !d.esInmobiliaria || (d.nombreInmobiliaria && d.nombreInmobiliaria.trim().length >= 2), {
+    message: "Ingresá el nombre de tu inmobiliaria.",
+    path: ["nombreInmobiliaria"],
   });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
