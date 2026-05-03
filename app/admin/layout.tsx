@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { createClient } from "@/lib/supabase/server";
+import { getInmoFeatures } from "@/lib/subscriptions";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({
   children,
@@ -24,9 +27,11 @@ export default async function AdminLayout({
     .maybeSingle();
   if (!agente) redirect("/publicar");
 
+  const features = await getInmoFeatures();
+
   return (
     <div className="grid min-h-full md:grid-cols-[260px_1fr]">
-      <AdminSidebar userEmail={user.email ?? null} />
+      <AdminSidebar userEmail={user.email ?? null} features={features} />
       <main className="flex-1 bg-white">{children}</main>
     </div>
   );

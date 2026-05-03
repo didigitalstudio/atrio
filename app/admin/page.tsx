@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getInmoFeatures } from "@/lib/subscriptions";
 
 export const metadata: Metadata = {
   title: "Panel · Atrio",
@@ -75,7 +76,7 @@ async function fetchCounts() {
 }
 
 export default async function AdminHomePage() {
-  const c = await fetchCounts();
+  const [c, features] = await Promise.all([fetchCounts(), getInmoFeatures()]);
 
   return (
     <div className="px-6 py-10 md:px-10 md:py-12">
@@ -94,6 +95,14 @@ export default async function AdminHomePage() {
           Publicar nueva
         </Link>
       </div>
+
+      {!features.reportes && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <span className="text-sm text-amber-800">
+            <strong>Plan Starter</strong> — Accedés a los conteos básicos. Actualizá a Pro para reportes avanzados.
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card
